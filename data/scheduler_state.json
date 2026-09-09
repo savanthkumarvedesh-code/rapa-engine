@@ -1,9 +1,0 @@
-{
-  "status": "STOPPED",
-  "last_run": "2026-09-09T16:54:17.968417",
-  "next_run": null,
-  "interval_seconds": 300,
-  "total_cycles_completed": 17,
-  "last_quotes_collected": 1172,
-  "last_error": null
-}

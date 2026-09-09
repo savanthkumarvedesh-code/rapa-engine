@@ -77,11 +77,15 @@ ZSCORE_THRESHOLD = 3.0
 # Maximum number of attempts per file before giving up
 MAX_RETRIES = 4
 # Initial wait in seconds before the first retry
-RETRY_BASE_DELAY = 2.0
+RETRY_BASE_DELAY = 5.0
 # Each retry multiplies the delay by this factor  (2 = exponential doubling)
 RETRY_BACKOFF_FACTOR = 2.0
 # Random jitter added to each delay (prevents thundering-herd on parallel runs)
 RETRY_JITTER = 1.0
+# Seconds to wait between processing each file (prevents burst 429s)
+INTER_FILE_DELAY = 5.0
+# Max chars to send to Gemini per file (large dumps burn through quota fast)
+MAX_CONTENT_CHARS = 100_000
 
 # File extensions to ingest from raw_dumps
 SUPPORTED_EXTENSIONS = ("*.html", "*.htm", "*.json", "*.txt", "*.xml")
@@ -180,14 +184,14 @@ def extract_quotes_from_file(
         return []
 
     # Gemini has a context window limit; warn if file is very large
-    if len(content) > 500_000:
+    if len(content) > MAX_CONTENT_CHARS:
         log.warning(
-            "File %s is very large (%d chars). Truncating to 500k chars to avoid "
-            "token limit errors.",
+            "File %s is very large (%d chars). Truncating to %d chars to stay within token quota.",
             Path(file_path).name,
             len(content),
+            MAX_CONTENT_CHARS,
         )
-        content = content[:500_000]
+        content = content[:MAX_CONTENT_CHARS]
 
     last_exc: Exception | None = None
 
@@ -241,24 +245,38 @@ def extract_quotes_from_file(
             last_exc = exc
 
             if attempt == MAX_RETRIES:
-                # Exhausted all retries — log and give up on this file
                 log.error(
                     "All %d attempts failed for %s. Last error: %s",
                     MAX_RETRIES, Path(file_path).name, exc,
                 )
                 break
 
-            # Exponential backoff: delay = base * (factor ^ (attempt-1)) + jitter
-            delay = (
-                RETRY_BASE_DELAY
-                * (RETRY_BACKOFF_FACTOR ** (attempt - 1))
-                + random.uniform(0, RETRY_JITTER)      # add jitter
-            )
-            log.warning(
-                "Attempt %d/%d failed for %s: %s — retrying in %.1fs ...",
-                attempt, MAX_RETRIES, Path(file_path).name, exc, delay,
-            )
-            time.sleep(delay)
+            # Check if the API told us exactly how long to wait (429 retryDelay)
+            api_wait: float | None = None
+            exc_str = str(exc)
+            if "retryDelay" in exc_str or "429" in exc_str:
+                import re as _re
+                m = _re.search(r"retryDelay.*?(\d+)s", exc_str)
+                if m:
+                    api_wait = float(m.group(1)) + 2.0   # add 2s buffer
+                    log.warning(
+                        "Rate-limited (429). API requests we wait %ds. Sleeping %.0fs ...",
+                        int(m.group(1)), api_wait,
+                    )
+
+            if api_wait is None:
+                # Exponential backoff: delay = base * (factor ^ (attempt-1)) + jitter
+                api_wait = (
+                    RETRY_BASE_DELAY
+                    * (RETRY_BACKOFF_FACTOR ** (attempt - 1))
+                    + random.uniform(0, RETRY_JITTER)
+                )
+                log.warning(
+                    "Attempt %d/%d failed for %s: %s — retrying in %.1fs ...",
+                    attempt, MAX_RETRIES, Path(file_path).name, exc, api_wait,
+                )
+
+            time.sleep(api_wait)
 
     return []  # all retries exhausted
 
@@ -450,9 +468,13 @@ def run_pipeline(dumps_dir: str, db_path: str) -> None:
     client = genai.Client(api_key=api_key)
 
     all_quotes: list[dict] = []
-    for file_path in files:
+    for i, file_path in enumerate(files):
         quotes = extract_quotes_from_file(client, file_path)
         all_quotes.extend(quotes)
+        # Polite inter-file delay to avoid rate-limit cascades on large batches
+        if i < len(files) - 1:
+            log.info("Waiting %.0fs before next file ...", INTER_FILE_DELAY)
+            time.sleep(INTER_FILE_DELAY)
 
     if not all_quotes:
         log.error("No quotes could be extracted from any file. Exiting.")

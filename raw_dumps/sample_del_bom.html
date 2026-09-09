@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Flight Search Results</title></head>
+<body>
+  <h1>Available Flights - DEL to BOM</h1>
+
+  <!-- Flight 1: Normal fare -->
+  <div class="flight-card" data-flight="6E-204">
+    <span class="airline">IndiGo</span>
+    <span class="flight-no">6E 204</span>
+    <span class="route">DEL → BOM</span>
+    <span class="depart">2026-10-15T06:30:00</span>
+    <span class="status available">Available</span>
+    <div class="fare-breakdown">
+      <span class="base-fare">₹3,450.00</span>
+      <span class="taxes">₹620.00</span>
+      <span class="udf">₹250.00</span>
+      <span class="conv">₹180.00</span>
+      <strong class="total">₹4,500.00</strong>
+    </div>
+  </div>
+
+  <!-- Flight 2: Normal fare -->
+  <div class="flight-card" data-flight="AI-131">
+    <span class="airline">Air India</span>
+    <span class="flight-no">AI 131</span>
+    <span class="route">DEL → BOM</span>
+    <span class="depart">2026-10-15T09:00:00</span>
+    <span class="status available">Available</span>
+    <div class="fare-breakdown">
+      <span class="base-fare">₹4,100.00</span>
+      <span class="taxes">₹740.00</span>
+      <span class="udf">₹260.00</span>
+      <span class="conv">₹200.00</span>
+      <strong class="total">₹5,300.00</strong>
+    </div>
+  </div>
+
+  <!-- Flight 3: Sold Out -->
+  <div class="flight-card" data-flight="SG-8169">
+    <span class="airline">SpiceJet</span>
+    <span class="flight-no">SG 8169</span>
+    <span class="route">DEL → BOM</span>
+    <span class="depart">2026-10-15T11:45:00</span>
+    <span class="status sold-out">Sold Out</span>
+    <div class="fare-breakdown">
+      <span class="base-fare">₹2,900.00</span>
+      <span class="taxes">₹520.00</span>
+      <span class="udf">₹230.00</span>
+      <span class="conv">₹150.00</span>
+      <strong class="total">₹3,800.00</strong>
+    </div>
+  </div>
+
+  <!-- Flight 4: Price outlier (extremely high fare to trigger Z-score flag) -->
+  <div class="flight-card" data-flight="UK-935">
+    <span class="airline">Vistara</span>
+    <span class="flight-no">UK 935</span>
+    <span class="route">DEL → BOM</span>
+    <span class="depart">2026-10-15T14:15:00</span>
+    <span class="status available">Available</span>
+    <div class="fare-breakdown">
+      <span class="base-fare">₹28,000.00</span>
+      <span class="taxes">₹4,200.00</span>
+      <span class="udf">₹800.00</span>
+      <span class="conv">₹500.00</span>
+      <strong class="total">₹33,500.00</strong>
+    </div>
+  </div>
+
+  <!-- Flight 5: Cancelled flight -->
+  <div class="flight-card" data-flight="G8-116">
+    <span class="airline">Go First</span>
+    <span class="flight-no">G8 116</span>
+    <span class="route">DEL → BOM</span>
+    <span class="depart">2026-10-15T17:00:00</span>
+    <span class="status cancelled">Cancelled</span>
+    <div class="fare-breakdown">
+      <span class="base-fare">₹3,100.00</span>
+      <span class="taxes">₹580.00</span>
+      <span class="udf">₹240.00</span>
+      <span class="conv">₹160.00</span>
+      <strong class="total">₹4,080.00</strong>
+    </div>
+  </div>
+</body>
+</html>

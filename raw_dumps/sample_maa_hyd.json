@@ -1,0 +1,47 @@
+[
+  {
+    "flight": "QP 1401",
+    "carrier": "Akasa Air",
+    "from": "MAA",
+    "to": "HYD",
+    "departure": "2026-10-20T07:10:00",
+    "pricing": {
+      "base": 1850,
+      "tax_charges": 340,
+      "airport_fee": 180,
+      "gateway_fee": 99,
+      "payable": 2469
+    },
+    "availability": "available"
+  },
+  {
+    "flight": "IX 321",
+    "carrier": "Air Asia India",
+    "from": "MAA",
+    "to": "HYD",
+    "departure": "2026-10-20T13:50:00",
+    "pricing": {
+      "base": 2200,
+      "tax_charges": 410,
+      "airport_fee": 200,
+      "gateway_fee": 120,
+      "payable": 2930
+    },
+    "availability": "available"
+  },
+  {
+    "flight": "SG 551",
+    "carrier": "SpiceJet",
+    "from": "MAA",
+    "to": "HYD",
+    "departure": "2026-10-20T19:30:00",
+    "pricing": {
+      "base": 1600,
+      "tax_charges": 290,
+      "airport_fee": 160,
+      "gateway_fee": 80,
+      "payable": 2130
+    },
+    "availability": "sold-out"
+  }
+]

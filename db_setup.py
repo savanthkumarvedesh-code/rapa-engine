@@ -86,7 +86,7 @@ def init_db(db_path: str | None = None) -> str:
     conn.commit()
     conn.close()
 
-    print(f"[db_setup] Database ready → {db_path}")
+    print(f"[db_setup] Database ready -> {db_path}")
     return db_path
 
 

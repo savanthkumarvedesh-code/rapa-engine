@@ -1,14 +1,14 @@
 # =============================================================================
-# .gitignore — flight_ingestion_pipeline
+# .gitignore
 # =============================================================================
 
-# ----- SECRET FILES (NEVER commit these) -----
-.env                  # Your real API keys live here — NEVER push this
+# SECRET FILES - NEVER commit these
+.env
 *.key
 *.pem
 secrets.json
 
-# ----- Python -----
+# Python
 __pycache__/
 *.py[cod]
 *.pyo
@@ -19,15 +19,15 @@ env/
 dist/
 build/
 
-# ----- Database (generated files, not source) -----
+# Database (generated at runtime - not source)
 *.db
 *.sqlite
 *.sqlite3
 
-# ----- Logs / temp -----
+# Logs / temp
 *.log
 *.tmp
 
-# ----- OS -----
+# OS
 .DS_Store
 Thumbs.db

@@ -29,6 +29,7 @@ from pydantic import BaseModel
 from data.db import (
     init_db,
     get_cpi_benchmarks,
+    get_latest_benchmark,
     get_ingestion_logs,
     get_all_index_records,
     get_connection,
@@ -157,7 +158,7 @@ def health_check():
     conn = get_connection(DB_PATH)
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT COUNT(*) FROM cpi_benchmarks WHERE item_code = '07.3.3.1.2.01' OR item_name = 'Airfare'")
+        cursor.execute("SELECT COUNT(*) FROM cpi_benchmarks WHERE item_code = '07.3.3.1.2.01' OR item_name LIKE '%Airfare%' OR is_proxy = 1")
         airfare_cpi_count = cursor.fetchone()[0]
 
         cursor.execute("SELECT COUNT(*) FROM cpi_benchmarks")
@@ -240,23 +241,34 @@ def get_cpi_metadata(base_year: str = Query("2024", description="Base Year (2024
 def get_cpi_airfare(
     state: Optional[str] = Query(None, description="State (e.g. 'All India', 'Delhi', 'Maharashtra')"),
     sector: Optional[str] = Query(None, description="Sector ('Rural', 'Urban', 'Combined')"),
-    year: Optional[int] = Query(None, description="Reference year (e.g. 2025)"),
+    year: Optional[int] = Query(None, description="Reference year (e.g. 2026)"),
     limit: int = Query(50, ge=1, le=500)
 ):
-    """Retrieves official MoSPI Item 294 Airfare benchmark index records (Base 2024=100)."""
+    """Retrieves official MoSPI Item 294 Airfare benchmark index records (Base 2024=100) or Group 07.3 Proxy."""
     records = get_cpi_benchmarks(item_name="Airfare", state=state, sector=sector, year=year, limit=limit, db_path=DB_PATH)
     return {
         "status": "success",
-        "item": "Airfare (Item 294 / 07.3.3.1.2.01)",
-        "source": "MoSPI eSankhyiki Official CPI",
+        "item": "Airfare (Item 294 / 07.3.3.1.2.01 / Group 07.3 Proxy)",
+        "source": "MoSPI Official CPI (Base 2024=100)",
         "returned_count": len(records),
         "data": records
     }
 
 
+@app.get("/v1/benchmark/latest", tags=["1. CPI Benchmark"])
+def get_latest_cpi_benchmark_endpoint():
+    """Retrieves the latest available official MoSPI CPI benchmark (July 2026, 07.3 Proxy, Base 2024=100)."""
+    benchmark = get_latest_benchmark(db_path=DB_PATH)
+    return {
+        "status": "success",
+        "benchmark_period": f"{benchmark.get('month')} {benchmark.get('year')}",
+        "benchmark": benchmark
+    }
+
+
 @app.post("/v1/ingest/cpi", tags=["1. CPI Benchmark"])
 def trigger_cpi_ingestion(
-    year: str = Query("2025", description="Target CPI year to fetch"),
+    year: str = Query("2026", description="Target CPI year to fetch"),
     base_year: str = Query("2024", description="Base year (2024 for Item 294 Airfare)")
 ):
     """Executes live ingestion of official CPI data from MoSPI eSankhyiki."""

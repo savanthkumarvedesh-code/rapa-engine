@@ -14,6 +14,45 @@ from typing import List, Dict, Any, Optional
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rapa.db")
 
+# Latest Official MoSPI CPI Benchmark Constants (MoSPI Press Release dated 12 Aug 2026, Provisional)
+LATEST_BENCHMARK_YEAR = 2026
+LATEST_BENCHMARK_MONTH = "July"
+LATEST_BENCHMARK_PERIOD = "July 2026"
+LATEST_BENCHMARK_BASE_YEAR = "2024"
+
+OFFICIAL_MOSPI_JULY_2026 = {
+    "general": {
+        "item_name": "All-India CPI (General)",
+        "item_code": "00",
+        "group_name": "General",
+        "sector": "Combined",
+        "cpi_index": 107.94,
+        "inflation": 4.45,
+        "is_proxy": 0,
+        "note": "MoSPI Press Release dated 12 Aug 2026 (Provisional)"
+    },
+    "transport": {
+        "item_name": "Group 07 Transport",
+        "item_code": "07",
+        "group_name": "Transport",
+        "sector": "Combined",
+        "cpi_index": 105.63,
+        "inflation": 4.43,
+        "is_proxy": 0,
+        "note": "MoSPI Press Release dated 12 Aug 2026 (Provisional)"
+    },
+    "passenger_transport_proxy": {
+        "item_name": "Airfare (Proxy: 07.3 Passenger transport services)",
+        "item_code": "07.3.3.1.2.01",
+        "group_name": "Passenger transport services",
+        "sector": "Combined",
+        "cpi_index": 105.39,
+        "inflation": 2.90,
+        "is_proxy": 1,
+        "note": "Group-level proxy for Item 294 from MoSPI Press Release dated 12 Aug 2026 (Provisional)"
+    }
+}
+
 
 def get_connection(db_path: str = DB_PATH) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
@@ -64,10 +103,21 @@ def init_db(db_path: str = DB_PATH) -> None:
         cpi_index REAL NOT NULL,
         inflation REAL,
         imputation TEXT,
+        is_proxy INTEGER DEFAULT 0,
+        note TEXT,
         created_at TEXT NOT NULL,
         UNIQUE(base_year, year, month, state, sector, item_code) ON CONFLICT REPLACE
     );
     """)
+
+    try:
+        cursor.execute("ALTER TABLE cpi_benchmarks ADD COLUMN is_proxy INTEGER DEFAULT 0;")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE cpi_benchmarks ADD COLUMN note TEXT;")
+    except Exception:
+        pass
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS fare_quotes (
@@ -220,12 +270,15 @@ def insert_cpi_records(records: List[Dict[str, Any]], db_path: str = DB_PATH) ->
             except (ValueError, TypeError):
                 yr_int = 2025
 
+            is_proxy_val = int(r.get("is_proxy", 1 if ("proxy" in str(r.get("item", "")).lower() or "proxy" in str(r.get("item_name", "")).lower() or str(r.get("group", "")).lower() == "passenger transport services") and "07.3" in str(r.get("code", r.get("item_code", ""))) else 0))
+            note_val = r.get("note")
+
             cursor.execute("""
             INSERT OR REPLACE INTO cpi_benchmarks (
                 base_year, series, year, month, state, sector, division,
                 group_name, sub_class, item_name, item_code, cpi_index,
-                inflation, imputation, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                inflation, imputation, is_proxy, note, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """, (
                 str(r.get("base_year", r.get("baseyear", "2024"))),
                 str(r.get("series", "Current")),
@@ -241,6 +294,8 @@ def insert_cpi_records(records: List[Dict[str, Any]], db_path: str = DB_PATH) ->
                 cpi_float,
                 inf_float,
                 r.get("imputation") or r.get("status"),
+                is_proxy_val,
+                note_val,
                 now_str
             ))
             inserted += 1
@@ -266,7 +321,7 @@ def get_cpi_benchmarks(
     params: List[Any] = []
 
     if item_name:
-        query += " AND (item_name LIKE ? OR division LIKE ? OR group_name LIKE ?)"
+        query += " AND (item_name LIKE ? OR division LIKE ? OR group_name LIKE ? OR is_proxy = 1)"
         params.extend([f"%{item_name}%", f"%{item_name}%", f"%{item_name}%"])
     if state:
         query += " AND state = ?"
@@ -278,13 +333,40 @@ def get_cpi_benchmarks(
         query += " AND year = ?"
         params.append(year)
 
-    query += " ORDER BY year DESC, month DESC, state ASC LIMIT ?"
+    query += """ ORDER BY year DESC, 
+        CASE month 
+            WHEN 'December' THEN 12 WHEN 'November' THEN 11 WHEN 'October' THEN 10
+            WHEN 'September' THEN 9 WHEN 'August' THEN 8 WHEN 'July' THEN 7
+            WHEN 'June' THEN 6 WHEN 'May' THEN 5 WHEN 'April' THEN 4
+            WHEN 'March' THEN 3 WHEN 'February' THEN 2 WHEN 'January' THEN 1
+            ELSE 0 
+        END DESC, state ASC LIMIT ?"""
     params.append(limit)
 
     cursor.execute(query, tuple(params))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_latest_benchmark(db_path: str = DB_PATH) -> Optional[Dict[str, Any]]:
+    """Retrieves the latest available official MoSPI CPI benchmark or proxy record."""
+    records = get_cpi_benchmarks(item_name="Airfare", state="All India", sector="Combined", limit=1, db_path=db_path)
+    if records:
+        return records[0]
+    return {
+        "base_year": LATEST_BENCHMARK_BASE_YEAR,
+        "year": LATEST_BENCHMARK_YEAR,
+        "month": LATEST_BENCHMARK_MONTH,
+        "state": "All India",
+        "sector": "Combined",
+        "item_name": OFFICIAL_MOSPI_JULY_2026["passenger_transport_proxy"]["item_name"],
+        "item_code": OFFICIAL_MOSPI_JULY_2026["passenger_transport_proxy"]["item_code"],
+        "cpi_index": OFFICIAL_MOSPI_JULY_2026["passenger_transport_proxy"]["cpi_index"],
+        "inflation": OFFICIAL_MOSPI_JULY_2026["passenger_transport_proxy"]["inflation"],
+        "is_proxy": 1,
+        "note": OFFICIAL_MOSPI_JULY_2026["passenger_transport_proxy"]["note"]
+    }
 
 
 def get_ingestion_logs(limit: int = 50, db_path: str = DB_PATH) -> List[Dict[str, Any]]:

@@ -159,7 +159,7 @@ def main():
         init_db(DB_PATH)
         conn = get_connection(DB_PATH)
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM cpi_benchmarks WHERE item_code = '07.3.3.1.2.01' OR item_name = 'Airfare'")
+        cur.execute("SELECT COUNT(*) FROM cpi_benchmarks WHERE item_code = '07.3.3.1.2.01' OR item_name LIKE '%Airfare%' OR is_proxy = 1")
         air_count = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM cpi_benchmarks")
         total_cpi = cur.fetchone()[0]

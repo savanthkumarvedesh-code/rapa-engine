@@ -119,8 +119,8 @@
                     <span>MoSPI CPI Benchmark</span>
                     <i data-lucide="landmark" class="w-4 h-4 text-emerald-600"></i>
                 </div>
-                <div class="mt-2 text-3xl font-extrabold text-emerald-600 tracking-tight" id="kpiCpi">124.23</div>
-                <div class="text-[11px] text-slate-500 mt-1 font-medium">Item 294 (Airfare) Base 2024=100</div>
+                <div class="mt-2 text-3xl font-extrabold text-emerald-600 tracking-tight" id="kpiCpi">105.39</div>
+                <div class="text-[11px] text-slate-500 mt-1 font-medium">July 2026 (07.3 Proxy) Base 2024=100</div>
             </div>
 
             <!-- KPI 3: LIVE QUOTES -->
@@ -746,6 +746,19 @@
                 const hData = await hRes.json();
                 if (hData && hData.database) {
                     document.getElementById('kpiQuotes').innerText = Number(hData.database.fare_quotes_count || 1664).toLocaleString();
+                }
+
+                // 1b. Load MoSPI Benchmark
+                try {
+                    const bRes = await fetch('/v1/benchmark/airfare?limit=1');
+                    if (bRes.ok) {
+                        const bData = await bRes.json();
+                        if (bData && bData.data && bData.data.length > 0) {
+                            document.getElementById('kpiCpi').innerText = Number(bData.data[0].cpi_index).toFixed(2);
+                        }
+                    }
+                } catch (be) {
+                    console.warn("Benchmark KPI fetch fallback:", be);
                 }
 
                 // 2. Load Index Summary

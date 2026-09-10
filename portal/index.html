@@ -32,46 +32,169 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-        .card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04); }
-        .card:hover { box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.06); }
-        .tab-btn.active { background: #0052CC; color: #FFFFFF; font-weight: 600; }
-        .tab-btn { background: #F1F5F9; color: #475569; }
-        #flight-map { height: 380px; border-radius: 10px; z-index: 10; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #F8FAFC; color: #0F172A; }
+        .card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04); }
+        .card:hover { border-color: #CBD5E1; }
+        .tab-btn {
+            background: #FFFFFF;
+            color: #475569;
+            border: 1px solid #CBD5E1;
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            line-height: 1.25;
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+        }
+        .tab-btn:hover:not(.active) {
+            background: #F1F5F9;
+            color: #0F172A;
+            border-color: #94A3B8;
+        }
+        .tab-btn.active {
+            background: #0F172A;
+            color: #FFFFFF;
+            border-color: #0F172A;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(15, 23, 42, 0.12);
+        }
+        #flight-map { height: 380px; border-radius: 16px; z-index: 10; border: 1px solid #E2E8F0; }
+
+        /* =========================================================
+           FULL-SCREEN LOADING OVERLAY & AIRCRAFT FLIGHT ANIMATION
+           ========================================================= */
+        #loadingOverlay {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #060B1A;
+            z-index: 9999;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: all;
+        }
+        #loadingOverlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .flight-trail {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 160vmax;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(56, 189, 248, 0.9) 0%, rgba(14, 165, 233, 0.5) 50%, rgba(245, 158, 11, 0.8) 100%);
+            transform: rotate(-31deg);
+            transform-origin: bottom left;
+            filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
+            pointer-events: none;
+        }
+        .aircraft-wrapper {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 58px;
+            height: 58px;
+            z-index: 10000;
+            filter: drop-shadow(0 0 20px #38BDF8) drop-shadow(0 0 40px #0EA5E9);
+            animation: flyAcross 6.0s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+            pointer-events: none;
+        }
+        @keyframes flyAcross {
+            0% {
+                transform: translate(-30px, 30px) rotate(58deg) scale(0.75);
+                opacity: 0;
+            }
+            3% {
+                opacity: 1;
+            }
+            92% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(calc(100vw + 60px), calc(-100vh - 60px)) rotate(58deg) scale(1.15);
+                opacity: 0;
+            }
+        }
+        .aircraft-svg {
+            width: 100%;
+            height: 100%;
+            fill: #FFFFFF;
+            filter: drop-shadow(0 0 4px #FFFFFF);
+        }
+        .loading-text {
+            position: absolute;
+            bottom: 48px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #38BDF8;
+            opacity: 0.9;
+            animation: pulseLoadingText 1.5s ease-in-out infinite;
+        }
+        @keyframes pulseLoadingText {
+            0%, 100% { opacity: 0.4; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1); }
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased">
+<body class="bg-[#F8FAFC] text-slate-900 min-h-screen flex flex-col antialiased">
+
+    <!-- FULL-SCREEN LOADING OVERLAY (AIRCRAFT FLIGHT ANIMATION) -->
+    <div id="loadingOverlay" aria-label="Loading RAPA Portal">
+        <div class="flight-trail"></div>
+        <div class="aircraft-wrapper">
+            <svg class="aircraft-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+            </svg>
+        </div>
+        <div class="loading-text">Connecting to Live Econometric Radar...</div>
+    </div>
 
     <!-- TOP INSTITUTIONAL NAV -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 px-6 py-3 shadow-sm">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-                    <i data-lucide="plane-takeoff" class="w-5 h-5"></i>
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 px-6 py-3.5 shadow-xs">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-10 h-10 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
+                    <i data-lucide="plane" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2.5">
                         <h1 class="text-base font-bold text-slate-900 tracking-tight">RAPA Executive Portal</h1>
-                        <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold px-2 py-0.5 rounded-full">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Live Real-Time
+                        <span class="inline-flex items-center gap-1.5 bg-emerald-50/80 text-emerald-700 border border-emerald-200/80 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live System
                         </span>
                     </div>
-                    <p class="text-xs text-slate-500 font-medium">Real-Time Airfare Price Index & High-Frequency CPI Augmentation</p>
+                    <p class="text-xs text-slate-500 font-normal mt-0.5">Real-Time Airfare Price Index & High-Frequency CPI Augmentation</p>
                 </div>
             </div>
 
-            <!-- LIVE ACTION BUTTON & QUICK EXPORT -->
-            <div class="flex items-center space-x-3">
-                <button onclick="triggerLiveExtraction()" id="extractBtn" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center space-x-2 shadow-md shadow-blue-600/20 transition cursor-pointer">
+            <!-- LIVE ACTION BUTTONS: CLEAR HIERARCHY -->
+            <div class="flex items-center space-x-2.5">
+                <!-- Primary Solid Button -->
+                <button onclick="triggerLiveExtraction()" id="extractBtn" class="bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white text-xs font-semibold px-4 py-2.5 rounded-lg flex items-center space-x-2 shadow-xs transition-all cursor-pointer">
                     <i data-lucide="refresh-cw" id="extractIcon" class="w-3.5 h-3.5"></i>
-                    <span>Extract Live Flight Data Now</span>
+                    <span>Extract Live Data</span>
                 </button>
-                <button onclick="toggleDemoMode()" id="demoBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center space-x-2 shadow-md transition cursor-pointer">
-                    <i data-lucide="radio" class="w-3.5 h-3.5"></i>
-                    <span id="demoBtnLabel">Live Streaming Demo</span>
+                <!-- Secondary Outline Button -->
+                <button onclick="toggleDemoMode()" id="demoBtn" class="bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-medium px-3.5 py-2.5 rounded-lg flex items-center space-x-2 shadow-xs transition-all cursor-pointer">
+                    <i data-lucide="radio" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span id="demoBtnLabel">Live Demo Stream</span>
                 </button>
-                <a href="/v1/export/report?format=csv&dataset=quotes" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center space-x-1.5 transition">
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <!-- Tertiary Ghost/Outline Button -->
+                <a href="/v1/export/report?format=csv&dataset=quotes" class="bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-medium px-3.5 py-2.5 rounded-lg flex items-center space-x-1.5 shadow-xs transition-all">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i>
                     <span>Export CSV</span>
                 </a>
             </div>
@@ -79,141 +202,145 @@
     </header>
 
     <!-- LIVE SSE PRICE TICKER STRIP -->
-    <div id="liveTickerWrap" class="bg-slate-900 border-b border-slate-700 px-0 py-0 overflow-hidden hidden">
-        <div class="flex items-center">
-            <div class="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 shrink-0 tracking-wider">● LIVE</div>
+    <div id="liveTickerWrap" class="bg-slate-900 border-b border-slate-800 px-0 py-0 overflow-hidden hidden">
+        <div class="flex items-center max-w-7xl mx-auto">
+            <div class="bg-slate-800 text-emerald-400 border-r border-slate-700 text-[10px] font-semibold px-3 py-1.5 shrink-0 tracking-wider flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> STREAM
+            </div>
             <div class="overflow-hidden flex-1">
-                <div id="tickerTrack" class="flex gap-8 whitespace-nowrap animate-none px-4 py-1.5 text-[11px] font-semibold text-slate-200 transition-all">
+                <div id="tickerTrack" class="flex gap-8 whitespace-nowrap animate-none px-4 py-1.5 text-[11px] font-medium text-slate-300 transition-all">
                     <span class="text-slate-400 italic">Connecting to live stealth scraper feed...</span>
                 </div>
             </div>
-            <div class="bg-slate-800 text-slate-400 text-[10px] px-3 py-1.5 shrink-0 font-mono" id="tickerClock">--:--:--</div>
+            <div class="bg-slate-800/80 text-slate-400 text-[10px] px-3 py-1.5 shrink-0 font-mono border-l border-slate-700" id="tickerClock">--:--:--</div>
         </div>
     </div>
 
     <!-- LIVE NOTIFICATION TOAST -->
     <div class="max-w-7xl mx-auto px-6 w-full pt-4">
-        <div id="liveToast" class="hidden p-3 rounded-xl text-xs flex items-center justify-between transition-all duration-300"></div>
+        <div id="liveToast" class="hidden p-3 rounded-lg text-xs flex items-center justify-between transition-all duration-300"></div>
     </div>
 
     <!-- MAIN DASHBOARD CONTENT -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+    <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-7 space-y-7">
 
-        <!-- 5 TOP EXECUTIVE KPI CARDS -->
+        <!-- 5 TOP EXECUTIVE KPI CARDS (CLEAN MINIMALIST SAAS METRICS) -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
             <!-- KPI 1: HEADLINE INDEX -->
-            <div class="card p-4 border-t-4 border-t-blue-600">
-                <div class="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <div class="card p-4.5 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                     <span>National Airfare Index</span>
-                    <i data-lucide="trending-up" class="w-4 h-4 text-blue-600"></i>
+                    <i data-lucide="line-chart" class="w-4 h-4 text-slate-400"></i>
                 </div>
-                <div class="mt-2 text-3xl font-extrabold text-blue-700 tracking-tight" id="kpiIndex">100.00</div>
-                <div class="text-[11px] text-slate-500 mt-1 font-medium flex items-center gap-1">
-                    <span class="text-emerald-600 font-semibold">● Active</span> Baseline: Dec 2025 = 100.0
+                <div class="mt-3 text-3xl font-extrabold text-slate-900 tracking-tight font-mono" id="kpiIndex">100.00</div>
+                <div class="text-[11px] text-slate-500 mt-2 font-normal flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Baseline: Dec 2025 = 100.0
                 </div>
             </div>
 
             <!-- KPI 2: MOSPI BENCHMARK -->
-            <div class="card p-4 border-t-4 border-t-emerald-600">
-                <div class="flex items-center justify-between text-xs font-semibold text-slate-500">
-                    <span>MoSPI CPI Benchmark</span>
-                    <i data-lucide="landmark" class="w-4 h-4 text-emerald-600"></i>
+            <div class="card p-4.5 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    <span>MoSPI Benchmark</span>
+                    <i data-lucide="landmark" class="w-4 h-4 text-slate-400"></i>
                 </div>
-                <div class="mt-2 text-3xl font-extrabold text-emerald-600 tracking-tight" id="kpiCpi">105.39</div>
-                <div class="text-[11px] text-slate-500 mt-1 font-medium">July 2026 (07.3 Proxy) Base 2024=100</div>
+                <div class="mt-3 text-3xl font-extrabold text-slate-900 tracking-tight font-mono" id="kpiCpi">105.39</div>
+                <div class="text-[11px] text-slate-500 mt-2 font-normal truncate">July 2026 (07.3 Proxy)</div>
             </div>
 
             <!-- KPI 3: LIVE QUOTES -->
-            <div class="card p-4 border-t-4 border-t-indigo-600">
-                <div class="flex items-center justify-between text-xs font-semibold text-slate-500">
-                    <span>Total Flights Extracted</span>
-                    <i data-lucide="plane" class="w-4 h-4 text-indigo-600"></i>
+            <div class="card p-4.5 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    <span>Quotes Extracted</span>
+                    <i data-lucide="database" class="w-4 h-4 text-slate-400"></i>
                 </div>
-                <div class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight" id="kpiQuotes">1,664</div>
-                <div class="text-[11px] text-slate-500 mt-1 font-medium">Live Domestic Itineraries</div>
+                <div class="mt-3 text-3xl font-extrabold text-slate-900 tracking-tight font-mono" id="kpiQuotes">1,664</div>
+                <div class="text-[11px] text-slate-500 mt-2 font-normal">Live Domestic Itineraries</div>
             </div>
 
             <!-- KPI 4: DYNAMIC YIELD SPREAD -->
-            <div class="card p-4 border-t-4 border-t-purple-600">
-                <div class="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <div class="card p-4.5 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                     <span>Dynamic Surge Premium</span>
-                    <i data-lucide="clock" class="w-4 h-4 text-purple-600"></i>
+                    <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
                 </div>
-                <div class="mt-2 text-3xl font-extrabold text-purple-700 tracking-tight">+62.0%</div>
-                <div class="text-[11px] text-slate-500 mt-1 font-medium">Next-Day vs 45-Day Advance</div>
+                <div class="mt-3 text-3xl font-extrabold text-slate-900 tracking-tight font-mono">+62.0%</div>
+                <div class="text-[11px] text-slate-500 mt-2 font-normal">T+1 vs T+45 Horizon</div>
             </div>
 
             <!-- KPI 5: MONITORED CARRIERS -->
-            <div class="card p-4 border-t-4 border-t-amber-500">
-                <div class="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <div class="card p-4.5 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                     <span>Airlines Monitored</span>
-                    <i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i>
+                    <i data-lucide="shield-check" class="w-4 h-4 text-slate-400"></i>
                 </div>
-                <div class="mt-2 text-xl font-bold text-slate-900 tracking-tight">5 Airlines</div>
-                <div class="text-[11px] text-slate-500 mt-1 font-medium truncate">IndiGo, AI, Akasa, AIX, SG</div>
+                <div class="mt-3 text-2xl font-bold text-slate-900 tracking-tight">5 Airlines</div>
+                <div class="text-[11px] text-slate-500 mt-2 font-normal truncate">IndiGo, AI, Akasa, AIX, SG</div>
             </div>
         </div>
 
-        <!-- PERSONA NAVIGATION TABS (CLEAN PILL STYLE) -->
-        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
-            <button onclick="setTab('corridors')" id="tab-corridors" class="tab-btn active text-xs px-4 py-2 rounded-lg transition font-medium flex items-center space-x-1.5">
-                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
-                <span>Trunk Corridors & Real-Time Fares</span>
-            </button>
-            <button onclick="setTab('yields')" id="tab-yields" class="tab-btn text-xs px-4 py-2 rounded-lg transition font-medium flex items-center space-x-1.5">
-                <i data-lucide="activity" class="w-3.5 h-3.5"></i>
-                <span>Dynamic Lead-Time Yield Curves</span>
-            </button>
-            <button onclick="setTab('heatmap')" id="tab-heatmap" class="tab-btn text-xs px-4 py-2 rounded-lg transition font-medium flex items-center space-x-1.5">
-                <i data-lucide="grid" class="w-3.5 h-3.5"></i>
-                <span>Sector-Wise Heatmap Matrix</span>
-            </button>
-            <button onclick="setTab('livefeed')" id="tab-livefeed" class="tab-btn text-xs px-4 py-2 rounded-lg transition font-medium flex items-center space-x-1.5">
-                <i data-lucide="list" class="w-3.5 h-3.5"></i>
-                <span>Live Flight Microdata Stream</span>
-            </button>
-            <button onclick="setTab('weights')" id="tab-weights" class="tab-btn text-xs px-4 py-2 rounded-lg transition font-medium flex items-center space-x-1.5">
-                <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
-                <span>DGCA Route Weight Adjuster</span>
-            </button>
-            <button onclick="setTab('mapview')" id="tab-mapview" class="tab-btn text-xs px-4 py-2 rounded-lg transition font-medium flex items-center space-x-1.5">
-                <i data-lucide="globe" class="w-3.5 h-3.5"></i>
-                <span>Domestic Route Network Map</span>
-            </button>
-            <button onclick="setTab('logs')" id="tab-logs" class="tab-btn text-xs px-4 py-2 rounded-lg transition font-medium flex items-center space-x-1.5">
-                <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
-                <span>Live System & Traffic Logs</span>
-            </button>
+        <!-- PERSONA NAVIGATION TABS (SPACIOUS & MODERN) -->
+        <div class="border-b border-slate-200 pb-1">
+            <nav class="flex flex-wrap items-center gap-2.5">
+                <button onclick="setTab('corridors')" id="tab-corridors" class="tab-btn active">
+                    <i data-lucide="layers" class="w-4 h-4 shrink-0"></i>
+                    <span>Trunk Corridors & Real-Time Fares</span>
+                </button>
+                <button onclick="setTab('yields')" id="tab-yields" class="tab-btn">
+                    <i data-lucide="line-chart" class="w-4 h-4 shrink-0"></i>
+                    <span>Dynamic Lead-Time Yield Curves</span>
+                </button>
+                <button onclick="setTab('heatmap')" id="tab-heatmap" class="tab-btn">
+                    <i data-lucide="grid" class="w-4 h-4 shrink-0"></i>
+                    <span>Sector-Wise Heatmap Matrix</span>
+                </button>
+                <button onclick="setTab('livefeed')" id="tab-livefeed" class="tab-btn">
+                    <i data-lucide="list" class="w-4 h-4 shrink-0"></i>
+                    <span>Live Flight Microdata Stream</span>
+                </button>
+                <button onclick="setTab('weights')" id="tab-weights" class="tab-btn">
+                    <i data-lucide="sliders" class="w-4 h-4 shrink-0"></i>
+                    <span>DGCA Route Weight Adjuster</span>
+                </button>
+                <button onclick="setTab('mapview')" id="tab-mapview" class="tab-btn">
+                    <i data-lucide="map" class="w-4 h-4 shrink-0"></i>
+                    <span>Route Network Map</span>
+                </button>
+                <button onclick="setTab('logs')" id="tab-logs" class="tab-btn">
+                    <i data-lucide="terminal" class="w-4 h-4 shrink-0"></i>
+                    <span>Live Telemetry Logs</span>
+                </button>
+            </nav>
         </div>
 
         <!-- TAB CONTENT 1: CORRIDORS & REAL-TIME FARES -->
         <section id="content-corridors" class="space-y-6">
             <div class="card p-6">
-                <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
                     <div>
-                        <h2 class="text-sm font-bold text-slate-900">Monitored Domestic Aviation Corridors</h2>
-                        <p class="text-xs text-slate-500">Real-time route-level pricing, passenger share weights, and distance proximity metrics.</p>
+                        <h2 class="text-sm font-semibold text-slate-900 tracking-tight">Monitored Domestic Aviation Corridors</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Real-time route-level pricing, passenger traffic weights, and Jevons price relative indices.</p>
                     </div>
-                    <span class="text-xs bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-md border border-blue-200">
-                        High-Frequency Microdata Feed
+                    <span class="text-[11px] bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded border border-slate-200">
+                        High-Frequency Feed
                     </span>
                 </div>
 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
                     <table class="w-full text-xs text-left">
-                        <thead class="bg-slate-100 text-slate-700 uppercase font-semibold text-[10px] border-b border-slate-200">
+                        <thead class="bg-slate-50 text-slate-600 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200">
                             <tr>
-                                <th class="py-3 px-3.5">Sector</th>
-                                <th class="py-3 px-3.5">Corridor Route</th>
-                                <th class="py-3 px-3.5">Distance</th>
-                                <th class="py-3 px-3.5">DGCA Weight</th>
-                                <th class="py-3 px-3.5">Current Avg Fare</th>
-                                <th class="py-3 px-3.5">Lowest Live Fare</th>
-                                <th class="py-3 px-3.5">Route Price Index</th>
+                                <th class="py-3.5 px-4 font-semibold">Sector</th>
+                                <th class="py-3.5 px-4 font-semibold">Corridor Route</th>
+                                <th class="py-3.5 px-4 font-semibold">Distance</th>
+                                <th class="py-3.5 px-4 font-semibold text-right">DGCA Weight</th>
+                                <th class="py-3.5 px-4 font-semibold text-right">Avg Fare</th>
+                                <th class="py-3.5 px-4 font-semibold text-right">Lowest Fare</th>
+                                <th class="py-3.5 px-4 font-semibold text-right">Route Price Index</th>
                             </tr>
                         </thead>
-                        <tbody id="corridorsTableBody" class="divide-y divide-slate-200">
-                            <tr><td colspan="7" class="py-4 text-center text-slate-400 font-medium">Loading corridor data...</td></tr>
+                        <tbody id="corridorsTableBody" class="divide-y divide-slate-100">
+                            <tr><td colspan="7" class="py-6 text-center text-slate-400 font-normal">Loading corridor data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -249,25 +376,25 @@
         <section id="content-heatmap" class="hidden space-y-6">
             <!-- Global Price Envelope KPI Chips -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div class="card p-3 border-l-4 border-l-emerald-500">
-                    <div class="text-[10px] uppercase font-bold text-slate-400">Baseline Saver Floor (T+45)</div>
+                <div class="card p-3">
+                    <div class="text-[10px] uppercase font-semibold text-slate-400">Baseline Saver Floor (T+45)</div>
                     <div id="hm-kpi-floor" class="text-base font-bold text-slate-800 mt-1">₹4,002</div>
-                    <div class="text-[10px] text-emerald-600 font-medium">Saver Price Floor</div>
+                    <div class="text-[10px] text-slate-500 font-normal">Saver Price Floor</div>
                 </div>
-                <div class="card p-3 border-l-4 border-l-amber-500">
-                    <div class="text-[10px] uppercase font-bold text-slate-400">Median Trunk Tariff</div>
+                <div class="card p-3">
+                    <div class="text-[10px] uppercase font-semibold text-slate-400">Median Trunk Tariff</div>
                     <div id="hm-kpi-median" class="text-base font-bold text-slate-800 mt-1">₹11,379</div>
-                    <div class="text-[10px] text-amber-600 font-medium">Weighted Market Center</div>
+                    <div class="text-[10px] text-slate-500 font-normal">Weighted Market Center</div>
                 </div>
-                <div class="card p-3 border-l-4 border-l-rose-500">
-                    <div class="text-[10px] uppercase font-bold text-slate-400">Peak Emergency Surge (T+1)</div>
+                <div class="card p-3">
+                    <div class="text-[10px] uppercase font-semibold text-slate-400">Peak Emergency Surge (T+1)</div>
                     <div id="hm-kpi-surge" class="text-base font-bold text-slate-800 mt-1">₹14,720</div>
-                    <div class="text-[10px] text-rose-600 font-medium">Next-Day Peak Tariff</div>
+                    <div class="text-[10px] text-slate-500 font-normal">Next-Day Peak Tariff</div>
                 </div>
-                <div class="card p-3 border-l-4 border-l-blue-500">
-                    <div class="text-[10px] uppercase font-bold text-slate-400">Max Lead-Time Spread</div>
+                <div class="card p-3">
+                    <div class="text-[10px] uppercase font-semibold text-slate-400">Max Lead-Time Spread</div>
                     <div id="hm-kpi-spread" class="text-base font-bold text-slate-800 mt-1">+37.0%</div>
-                    <div class="text-[10px] text-blue-600 font-medium">DEL-BOM Corridor Elasticity</div>
+                    <div class="text-[10px] text-slate-500 font-normal">DEL-BOM Corridor Elasticity</div>
                 </div>
             </div>
 
@@ -355,31 +482,31 @@
         <!-- TAB CONTENT 3: LIVE FLIGHT MICRODATA STREAM -->
         <section id="content-livefeed" class="hidden space-y-6">
             <div class="card p-6">
-                <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 mb-5 gap-3">
                     <div>
-                        <h2 class="text-sm font-bold text-slate-900">Live Flight Quotes Ingested Stream</h2>
-                        <p class="text-xs text-slate-500">Real-time flight records with flight numbers, timestamps, and verified tariffs.</p>
+                        <h2 class="text-sm font-semibold text-slate-900 tracking-tight">Live Flight Quotes Ingested Stream</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Real-time flight records with flight numbers, timestamps, and verified tariffs.</p>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <input type="text" id="filterInput" onkeyup="filterLiveQuotes()" placeholder="Filter by route or carrier..." class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-3 py-1.5 text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <input type="text" id="filterInput" onkeyup="filterLiveQuotes()" placeholder="Filter by route, carrier, flight..." class="bg-white border border-slate-300 text-xs rounded-lg px-3.5 py-1.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-500 shadow-2xs w-64 transition">
                     </div>
                 </div>
 
-                <div class="overflow-x-auto max-h-96">
+                <div class="overflow-x-auto max-h-96 rounded-xl border border-slate-200">
                     <table class="w-full text-xs text-left" id="liveQuotesTable">
-                        <thead class="bg-slate-100 text-slate-700 uppercase font-semibold text-[10px] border-b border-slate-200 sticky top-0">
+                        <thead class="bg-slate-50 text-slate-600 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200 sticky top-0">
                             <tr>
-                                <th class="py-2.5 px-3">Route</th>
-                                <th class="py-2.5 px-3">Airline</th>
-                                <th class="py-2.5 px-3">Flight No.</th>
-                                <th class="py-2.5 px-3">Booking Horizon</th>
-                                <th class="py-2.5 px-3">Departure Date</th>
-                                <th class="py-2.5 px-3">Total Passenger Fare</th>
-                                <th class="py-2.5 px-3">Status</th>
+                                <th class="py-3 px-4 font-semibold">Route</th>
+                                <th class="py-3 px-4 font-semibold">Airline</th>
+                                <th class="py-3 px-4 font-semibold">Flight No.</th>
+                                <th class="py-3 px-4 font-semibold">Booking Horizon</th>
+                                <th class="py-3 px-4 font-semibold">Departure Date</th>
+                                <th class="py-3 px-4 font-semibold">Total Passenger Fare</th>
+                                <th class="py-3 px-4 font-semibold">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="liveQuotesTableBody" class="divide-y divide-slate-200">
-                            <tr><td colspan="7" class="py-4 text-center text-slate-400 font-medium">Loading live flight microdata...</td></tr>
+                        <tbody id="liveQuotesTableBody" class="divide-y divide-slate-100">
+                            <tr><td colspan="7" class="py-6 text-center text-slate-400 font-normal">Loading live flight microdata...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -398,12 +525,12 @@
                     <!-- Populated by JS -->
                 </div>
 
-                <div class="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                <div class="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
                     <div>
-                        <div class="text-xs text-slate-500 font-semibold">Active Composite Basket Average:</div>
-                        <div class="text-xl font-bold text-blue-700 mt-0.5" id="dynamicBasketAvg">₹8,245.00</div>
+                        <div class="text-xs text-slate-500 font-medium">Active Composite Basket Average:</div>
+                        <div class="text-xl font-bold text-slate-900 mt-0.5" id="dynamicBasketAvg">₹8,245.00</div>
                     </div>
-                    <button onclick="applyDynamicWeights()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-sm flex items-center space-x-1.5">
+                    <button onclick="applyDynamicWeights()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-md transition flex items-center space-x-1.5 cursor-pointer">
                         <span>Apply & Recalculate Index</span>
                     </button>
                 </div>
@@ -994,14 +1121,18 @@
                 const s = routeStats[code] || { avg: 7500, min: 5000, index: 100.0 };
                 const w = (info.basket_weight != null) ? info.basket_weight : 0.15;
                 html += `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-3 px-3.5 font-bold text-slate-900">${code}</td>
-                        <td class="py-3 px-3.5 text-slate-600 font-medium">${info.origin_city} → ${info.destination_city}</td>
-                        <td class="py-3 px-3.5 text-slate-500">${info.distance_km || 1000} km</td>
-                        <td class="py-3 px-3.5 font-semibold text-blue-700">${(w * 100).toFixed(1)}%</td>
-                        <td class="py-3 px-3.5 font-bold text-slate-900">₹${s.avg.toLocaleString()}</td>
-                        <td class="py-3 px-3.5 font-semibold text-emerald-600">₹${s.min.toLocaleString()}</td>
-                        <td class="py-3 px-3.5 font-extrabold text-blue-700">${s.index.toFixed(2)}</td>
+                    <tr class="hover:bg-slate-50/80 transition duration-150">
+                        <td class="py-3.5 px-4 font-semibold text-slate-900">${code}</td>
+                        <td class="py-3.5 px-4 text-slate-600 font-normal">${info.origin_city} → ${info.destination_city}</td>
+                        <td class="py-3.5 px-4 text-slate-400 font-normal">${info.distance_km || 1000} km</td>
+                        <td class="py-3.5 px-4 text-right font-mono font-medium text-slate-600">${(w * 100).toFixed(1)}%</td>
+                        <td class="py-3.5 px-4 text-right font-mono font-semibold text-slate-900">₹${s.avg.toLocaleString()}</td>
+                        <td class="py-3.5 px-4 text-right font-mono font-normal text-slate-500">₹${s.min.toLocaleString()}</td>
+                        <td class="py-3.5 px-4 text-right">
+                            <span class="inline-block font-mono font-bold text-slate-900 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded text-xs shadow-2xs">
+                                ${s.index.toFixed(2)}
+                            </span>
+                        </td>
                     </tr>
                 `;
             }
@@ -1122,14 +1253,14 @@
             quotes.slice(0, 50).forEach(q => {
                 const cname = carrierNames[q.carrier_code] || q.carrier_code;
                 html += `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-2.5 px-3 font-bold text-slate-900">${q.route}</td>
-                        <td class="py-2.5 px-3 font-medium text-slate-700">${cname} (${q.carrier_code})</td>
-                        <td class="py-2.5 px-3 font-mono text-slate-600">${q.flight_number}</td>
-                        <td class="py-2.5 px-3"><span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[10px] font-semibold">${q.advance_window}</span></td>
-                        <td class="py-2.5 px-3 text-slate-500">${q.departure_date}</td>
-                        <td class="py-2.5 px-3 font-bold text-slate-900">₹${Number(q.total_fare).toLocaleString()}</td>
-                        <td class="py-2.5 px-3"><span class="text-emerald-600 font-semibold text-[11px]">● Verified</span></td>
+                    <tr class="hover:bg-slate-50/80 transition duration-150">
+                        <td class="py-3 px-4 font-semibold text-slate-900">${q.route}</td>
+                        <td class="py-3 px-4 text-slate-700 font-normal">${cname} <span class="text-slate-400 text-[11px]">(${q.carrier_code})</span></td>
+                        <td class="py-3 px-4 font-mono text-slate-500 text-[11px]">${q.flight_number}</td>
+                        <td class="py-3 px-4"><span class="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-medium">${q.advance_window}</span></td>
+                        <td class="py-3 px-4 text-slate-400 font-normal text-[11px]">${q.departure_date}</td>
+                        <td class="py-3 px-4 font-mono font-semibold text-slate-900">₹${Number(q.total_fare).toLocaleString()}</td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 text-emerald-700 font-medium text-[11px]"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Verified</span></td>
                     </tr>
                 `;
             });
@@ -1256,6 +1387,17 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             loadDashboardData();
+
+            // Smoothly fade out loading overlay after the 6s aircraft flight
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                setTimeout(() => {
+                    overlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                    }, 600);
+                }, 6000);
+            }
         });
     </script>
 </body>

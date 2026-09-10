@@ -1,44 +1,101 @@
-# ✈️ RAPA Engine — Flight Quote Ingestion & Analytics Platform
+# RAPA — Real-Time Airfare Price Analytics & Econometric CPI Engine
 
-> Powered by **Google Gemini 3.6 Flash** | FastAPI | Streamlit | SQLite | Pandas
-
-A production-grade, end-to-end flight quote data platform:
-- **Ingests** raw HTML/JSON dumps scraped from booking portals
-- **Extracts** structured records using Gemini 3.6 Flash (AI-powered parsing)
-- **Validates** fare mathematics and detects price outliers with Z-scores
-- **Serves** data via a government-ready REST API (FastAPI)
-- **Visualises** sector heatmaps and lead-time elasticity via a Streamlit dashboard
+> Powered by **FastAPI** | **Streamlit** | **SQLite (WAL)** | **Pydantic v2** | **Pandas & SciPy** | **Playwright**
 
 ---
 
-## 📁 Project Structure
+## 1. Executive Summary & Problem Landscape
+
+Official Consumer Price Index (CPI) reporting across transport services in India faces four fundamental systemic hurdles:
+
+1. **45-Day Statistical Reporting Lag**: Official CPI published by the Ministry of Statistics and Programme Implementation (MoSPI) is released weeks after the observation period. Rapid, algorithmic airline repricing shocks blind monetary policy and regulators during acute demand surges.
+2. **Dynamic Pricing Volatility (200%–400%)**: Airfares vary by 300% or more across booking advance horizons (T+1 emergency travel vs T+45 planned travel). Unstratified sampling produces artificial, extreme inflation spikes that misrepresent true cost-of-living trends.
+3. **Upward Substitution Bias (2.0%–3.5%)**: Traditional arithmetic averaging (the Carli formula used in field surveys) overstates flight inflation by **2.0% to 3.5%** due to asymmetric airline surge pricing extremes.
+4. **Lack of Cryptographic Data Provenance**: Conventional manual field surveys lack auditable, legally defensible, tamper-proof proof of fare observation.
+
+**RAPA** resolves these challenges by deploying an automated, ethical, high-frequency price observation engine paired with a **Jevons Axiomatic Geometric Index** and **DGCA passenger volume weighting**, delivering daily, weekly, and monthly airfare price relatives for national statistical compilation.
+
+---
+
+## 2. Core Architectural Pillars
+
+- **Ethical Dual-Channel Harvester**: Non-disruptive, polite extraction across direct carrier endpoints (IndiGo, Air India, Akasa, SpiceJet, AI Express) and Online Travel Agencies (MakeMyTrip, Yatra, EaseMyTrip, Cleartrip, Ixigo, Goibibo) bounded by 0.2 RPS throttling, humanized jitter, and zero DDoS footprint.
+- **In-House Anti-Bot Challenge Resolution**: Playwright session manager featuring human-like Bezier curve mouse deceleration against Cloudflare Turnstile, reCAPTCHA v2 token execution, and Vision OCR challenge solvers with zero paid third-party dependencies.
+- **Pydantic v2 Ingestion Firewall**: Enforces strict typing, positive price constraints, and fare component arithmetic checks ($\text{Total Fare} = \text{Base Fare} + \text{Taxes} + \text{UDF} + \text{Convenience Charge} \pm 0.01$).
+- **Cryptographic Audit Vault**: Raw HTML/JSON responses hashed via **SHA-256** and archived to provide immutable, legally defensible provenance against airline regulatory challenge.
+- **5-Horizon Matched-Model Stratification**: Standardizes observation across 5 advance booking windows ($T+1, T+3, T+7, T+14, T+45$), ensuring apples-to-apples economic comparison.
+- **Axiomatic Jevons Geometric Mean**: Aggregates price relatives geometrically, satisfying international UN/ILO Time-Reversal axioms and eliminating upward substitution bias.
+- **DGCA Passenger Volume Weighting**: Weights corridor relatives based on empirical Directorate General of Civil Aviation passenger density (e.g., DEL-BOM 25%, DEL-BLR 20%).
+- **MoSPI Benchmark Tracking**: Tracks official July 2026 CPI benchmarks (Base 2024 = 100) including Group 07 Transport (105.63) and Group 07.3 Passenger Transport Services (105.39) as official proxies for Item 294 (Airfare).
+
+---
+
+## 3. Project Directory Structure
 
 ```
 rapa-engine/
-├── raw_dumps/                        ← Drop raw HTML/JSON dump files here
-│   ├── sample_del_bom.html           ← Sample: 5 flights DEL→BOM (incl. outlier)
-│   ├── sample_maa_hyd.json           ← Sample: 3 flights MAA→HYD
-│   └── quote_DEL-BOM_T+*.html        ← Lead-time variant dumps (T+1, T+7, T+15...)
+├── api/                                  # Asynchronous FastAPI Microservice
+│   └── main.py                           # REST API server (NSO/RBI feeds, quotes, heatmap, benchmarks)
 │
-├── schema.py          ← Pydantic v2 structured output contract for Gemini
-├── db_setup.py        ← SQLite schema initialiser (flight_quotes.db)
-├── processor.py       ← Phase 1: Gemini extraction + validation + ingestion
-├── main.py            ← Phase 2: FastAPI REST service (3 endpoints + health)
-├── dashboard.py       ← Phase 2: Streamlit analytics dashboard
-├── api_test.py        ← Gemini API connectivity diagnostic
-├── query_db.py        ← SQLite database inspector + fare stats
+├── benchmark/                            # Official Benchmark Calibration Subsystem
+│   ├── mospi_client.py                   # MoSPI eSankhyiki / Press Release client
+│   └── fixtures/                         # Official CPI datasets (July 2026, Base 2024=100)
 │
-├── src/rapa/ingestion/
-│   ├── custom_scraper.py         ← Custom HTML scraper engine
-│   └── dynamic_session_engine.py ← Dynamic session-based scraper
-├── tests/
-│   ├── test_custom_scraper.py
-│   └── test_dynamic_session_engine.py
+├── dashboard/                            # Interactive Frontend Analytics
+│   ├── app.py                            # Streamlit analytics dashboard (heatmaps, elasticity curves)
+│   └── components/                       # Visualisation modules and Plotly components
 │
-├── requirements.txt   ← All Python dependencies
-├── .env.example       ← API key template (copy to .env — never commit .env)
-├── .gitignore         ← Blocks .env, *.db, __pycache__ from Git
-└── README.md
+├── data/                                 # Persistence & Database Layer
+│   ├── db.py                             # Core SQLite access layer, schema, migrations & CRUD
+│   ├── rapa.db                           # Production SQLite database (WAL mode, 1,600+ quotes)
+│   └── flight_quotes.db                  # Ingestion extraction database
+│
+├── portal/                               # Administrative Web Portal
+│   ├── index.html                        # Lightweight single-page executive interface
+│   └── static/                           # Portal styling, layouts, and SVG assets
+│
+├── raw_dumps/                            # Cryptographic Provenance Storage
+│   ├── sample_del_bom.html               # Raw airline DOM snapshots
+│   ├── sample_maa_hyd.json               # Raw JSON payload dumps
+│   └── quote_DEL-BOM_T+*.html            # Lead-time stratified dumps (T+1 to T+45)
+│
+├── scripts/                              # Verification & Diagnostic Utilities
+│   ├── audit_pure.py                     # 24-point zero-compromise system verification
+│   └── test_ignav_coverage.py            # Comprehensive test coverage runner
+│
+├── src/rapa/ingestion/                   # Ingestion & Anti-Bot Engine
+│   ├── custom_scraper.py                 # Multi-carrier and OTA scraping engine
+│   ├── dynamic_session_engine.py         # Playwright session manager
+│   └── captcha_solver.py                 # Autonomous in-house challenge solver (Bezier + Vision)
+│
+├── tests/                                # Automated Test Suite (100% Passing)
+│   ├── test_api.py                       # REST API endpoint tests
+│   ├── test_benchmark.py                 # MoSPI benchmark and proxy tests
+│   ├── test_captcha_solver.py            # Anti-bot resolution tests
+│   ├── test_custom_scraper.py            # Scraper rate-limiting and session tests
+│   ├── test_deduplication.py             # 5-minute sliding-window deduplication tests
+│   ├── test_dynamic_session_engine.py    # Playwright browser integration tests
+│   ├── test_fare_class.py                # Cabin-class decomposition tests
+│   ├── test_formulas.py                  # Jevons geometric mean and math tests
+│   ├── test_frequency_aggregation.py     # Daily, weekly, monthly aggregation tests
+│   ├── test_heatmap_backtest.py          # Heatmap calculation and backtest tests
+│   ├── test_ota_scraper.py               # OTA aggregator parsing tests
+│   ├── test_proxy_rotator.py             # Proxy pool and fail-loud tests
+│   └── test_scheduler.py                 # APScheduler background daemon tests
+│
+├── validation/                           # Econometric & Schema Validation
+│   ├── backtest.py                       # Econometric backtesting engine
+│   └── evaluator.py                      # Pydantic validation and outlier detection
+│
+├── db_setup.py                           # Database schema initializer and migration script
+├── processor.py                          # Gemini extraction and batch ingestion pipeline
+├── query_db.py                           # Database inspection and fare statistics CLI
+├── run.py                                # Unified master CLI runner (scrape, calculate, serve)
+├── scheduler.py                          # APScheduler daily extraction daemon
+├── schema.py                             # Pydantic v2 structured output contracts
+├── requirements.txt                      # Project Python dependencies
+├── .env.example                          # Environment variable configuration template
+└── README.md                             # Comprehensive project documentation
 ```
 
 ---

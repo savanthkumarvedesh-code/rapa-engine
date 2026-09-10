@@ -36,43 +36,43 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom Styling (Dark Government Analytics Theme)
+# Custom Styling (Clean Plain Neutral Analytics Theme)
 st.markdown("""
 <style>
-    .main { background-color: #0B0E14; }
+    .main { background-color: #F8FAFC; color: #0F172A; }
     div[data-testid="stMetric"] {
-        background: rgba(22, 27, 34, 0.75);
-        border: 1px solid #30363D;
-        border-radius: 8px;
-        padding: 12px 16px;
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 16px 20px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
     }
-    div[data-testid="stMetricLabel"] { font-size: 0.85rem; color: #8B949E; }
-    div[data-testid="stMetricValue"] { font-size: 1.6rem; font-weight: 600; color: #E6EDF3; }
+    div[data-testid="stMetricLabel"] { font-size: 0.82rem; color: #64748B; font-weight: 500; }
+    div[data-testid="stMetricValue"] { font-size: 1.5rem; font-weight: 700; color: #0F172A; }
     .live-badge {
         display: inline-block;
-        background: rgba(35, 134, 54, 0.2);
-        color: #3FB950;
-        border: 1px solid #238636;
+        background: #F1F5F9;
+        color: #334155;
+        border: 1px solid #CBD5E1;
         padding: 3px 8px;
-        border-radius: 12px;
+        border-radius: 4px;
         font-size: 0.75rem;
         font-weight: 600;
     }
     .persona-badge {
         display: inline-block;
-        background: rgba(56, 139, 253, 0.15);
-        color: #58A6FF;
-        border: 1px solid #1F6FEB;
+        background: #0F172A;
+        color: #FFFFFF;
         padding: 4px 10px;
-        border-radius: 14px;
-        font-size: 0.82rem;
-        font-weight: 600;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
         margin-bottom: 8px;
     }
     .health-badge-green {
-        background: rgba(35, 134, 54, 0.2);
-        color: #3FB950;
-        border: 1px solid #238636;
+        background: #F1F5F9;
+        color: #0F172A;
+        border: 1px solid #E2E8F0;
         padding: 2px 6px;
         border-radius: 4px;
         font-size: 0.75rem;

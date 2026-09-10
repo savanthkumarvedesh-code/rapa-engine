@@ -132,23 +132,28 @@ class CustomIndexRequest(BaseModel):
 
 
 from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
-PORTAL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "portal", "index.html")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PORTAL_DIR = os.path.join(BASE_DIR, "portal")
+PORTAL_PATH = os.path.join(PORTAL_DIR, "index.html")
+PORTAL_STATIC_DIR = os.path.join(PORTAL_DIR, "static")
+
+# Mount portal static files if present
+if os.path.exists(PORTAL_STATIC_DIR):
+    app.mount("/portal/static", StaticFiles(directory=PORTAL_STATIC_DIR), name="portal_static")
+    app.mount("/static", StaticFiles(directory=PORTAL_STATIC_DIR), name="static")
 
 
 @app.get("/", response_class=HTMLResponse, tags=["System"])
+@app.get("/portal", response_class=HTMLResponse, tags=["System"])
+@app.get("/portal/index.html", response_class=HTMLResponse, tags=["System"])
 def root():
     """Serves the RAPA Executive Multi-Persona Web Portal."""
     if os.path.exists(PORTAL_PATH):
         with open(PORTAL_PATH, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>RAPA Portal</h1><p>Visit <a href='/docs'>/docs</a> for API.</p>")
-
-
-@app.get("/portal", response_class=HTMLResponse, tags=["System"])
-def get_portal():
-    """Direct route to RAPA Multi-Persona Web Portal."""
-    return root()
 
 
 

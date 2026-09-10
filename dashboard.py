@@ -225,6 +225,68 @@ with col5:
     math_pct = df["is_math_valid"].sum() / len(df) * 100 if not df.empty else 0
     st.metric("Math Valid", f"{math_pct:.0f}%")
 
+@st.cache_data(ttl=30)
+def load_index_series(frequency: str = "daily") -> pd.DataFrame:
+    """Load index_values table for given frequency, auto-aggregating if not computed."""
+    if not os.path.exists(DB_PATH):
+        return pd.DataFrame()
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        query = "SELECT calculation_date, jevons_index, naive_index, inflation_mom FROM index_values WHERE LOWER(frequency) = ? ORDER BY calculation_date ASC"
+        idf = pd.read_sql_query(query, conn, params=(frequency.lower(),))
+        if idf.empty and frequency.lower() in ("weekly", "monthly"):
+            from index.calculator import recompute_all_frequencies
+            recompute_all_frequencies(DB_PATH)
+            idf = pd.read_sql_query(query, conn, params=(frequency.lower(),))
+        return idf
+    except Exception:
+        return pd.DataFrame()
+    finally:
+        conn.close()
+
+
+# =============================================================================
+# CHART 0: Airfare Price Index (APIx) Trends & Frequency Aggregation
+# =============================================================================
+
+st.markdown("## Airfare Price Index (APIx) Trends")
+st.caption(
+    "Matched-model Jevons index across time. Choose aggregation frequency to inspect "
+    "high-frequency daily signals or smoothed weekly / monthly series for NSO & RBI macro integration."
+)
+
+freq_col, _ = st.columns([2, 3])
+with freq_col:
+    freq_choice = st.radio(
+        "Index Frequency:",
+        ["Daily", "Weekly", "Monthly"],
+        horizontal=True,
+        index=0,
+        key="index_freq_toggle"
+    )
+
+idf = load_index_series(freq_choice.lower())
+if not idf.empty:
+    fig_index = px.line(
+        idf,
+        x="calculation_date",
+        y="jevons_index",
+        markers=True,
+        title=f"APIx Airfare Price Index ({freq_choice}) — Base: Dec 2025 = 100.0",
+        labels={"calculation_date": "Period", "jevons_index": "Jevons Index"}
+    )
+    fig_index.update_traces(line_color="#64ffda", marker=dict(size=8, color="#64ffda"))
+    fig_index.update_layout(
+        paper_bgcolor="#0f1117",
+        plot_bgcolor="#1a1d2e",
+        font_color="#ccd6f6",
+        height=360,
+        margin={"t": 40, "b": 40, "l": 40, "r": 20},
+    )
+    st.plotly_chart(fig_index, use_container_width=True)
+else:
+    st.info(f"No {freq_choice.lower()} index records available yet.")
+
 st.markdown("---")
 
 

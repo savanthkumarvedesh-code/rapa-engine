@@ -31,6 +31,7 @@ from src.rapa.ingestion.custom_scraper import (
     USER_AGENTS,
     VIEWPORT_PROFILES,
 )
+from src.rapa.ingestion.captcha_solver import DynamicCaptchaHandler
 
 logging.basicConfig(
     level=logging.INFO,
@@ -139,6 +140,7 @@ class DynamicSessionEngine:
         robots_checker: Optional[RobotsChecker] = None,
         headless: bool = True,
         navigation_timeout_ms: int = 30000,
+        captcha_handler: Optional[DynamicCaptchaHandler] = None,
     ):
         self.output_dir = os.path.abspath(output_dir)
         os.makedirs(self.output_dir, exist_ok=True)
@@ -147,6 +149,7 @@ class DynamicSessionEngine:
         self.robots_checker = robots_checker or RobotsChecker()
         self.headless = headless
         self.navigation_timeout_ms = navigation_timeout_ms
+        self.captcha_handler = captcha_handler or DynamicCaptchaHandler()
 
     def get_context_options(self) -> Dict[str, Any]:
         """Generates configuration for a new browser context with randomized fingerprints."""
@@ -304,6 +307,13 @@ class DynamicSessionEngine:
             logger.info(f"Navigating to {target_url} [{route_code} {horizon_code}]...")
             resp = page.goto(target_url, wait_until="domcontentloaded", timeout=self.navigation_timeout_ms)
             
+            # Autonomous Dynamic CAPTCHA check and automated resolution
+            captcha_res = self.captcha_handler.handle_and_solve_captcha(page)
+            if captcha_res.get("detected"):
+                logger.info(f"Dynamic CAPTCHA detected ({captcha_res.get('type')}). Resolution outcome: {captcha_res.get('solved')}")
+                if captcha_res.get("solved"):
+                    self.state_store.export_state_from_context(context)
+
             # Execute organic human mouse/scroll behavior
             simulate_human_interaction(page)
             

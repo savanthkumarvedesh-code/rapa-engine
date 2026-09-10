@@ -10,29 +10,26 @@ import concurrent.futures
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
 
-from fares.ignav_client import IgnavFareCollector
+from fares.scraper_client import ScraperFareCollector
 from index.calculator import load_routes_config, calculate_matched_index
 from data.db import log_ingestion, DB_PATH
 
-MAX_WORKERS = 5  # start conservative; raise only if Ignav doesn't rate-limit you
+MAX_WORKERS = 5
 
 
 def collect_route_fares(
-    collector: IgnavFareCollector = None,
+    collector: ScraperFareCollector = None,
     reference_date: datetime = None,
     db_path: str = DB_PATH
 ) -> Dict[str, Any]:
     """
     Ingests live fares for all routes and booking horizons in the basket,
-    using a thread pool to run API calls concurrently.
+    using the autonomous scraping engine concurrently.
     """
     if collector is None:
-        collector = IgnavFareCollector(db_path=db_path)
+        collector = ScraperFareCollector(db_path=db_path)
     if reference_date is None:
         reference_date = datetime.now()
-
-    if not collector.is_configured():
-        raise RuntimeError("IGNAV_API_KEY is not configured in environment.")
 
     routes_config = load_routes_config()
     routes = routes_config.get("routes", {})

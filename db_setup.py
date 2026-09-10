@@ -25,6 +25,21 @@ def get_db_path() -> str:
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), DB_NAME)
 
 
+
+
+def _safe_add_columns(cursor, table: str, columns: list) -> None:
+    """
+    Safely add columns to an existing SQLite table using ALTER TABLE.
+    Silently ignores 'duplicate column' errors so this is safe to re-run
+    on already-migrated databases without losing data.
+    """
+    for col_name, col_def in columns:
+        try:
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_def}")
+        except Exception:
+            pass  # Column already exists — safe to ignore
+
+
 def init_db(db_path: str | None = None) -> str:
     """
     Create the `flight_quotes` table if it doesn't already exist.
@@ -76,12 +91,26 @@ def init_db(db_path: str | None = None) -> str:
             -- Pipeline-computed quality flags
             is_math_valid        INTEGER NOT NULL DEFAULT 1,   -- BOOLEAN (0/1)
             is_price_outlier     INTEGER NOT NULL DEFAULT 0,   -- BOOLEAN (0/1)
+            is_duplicate         INTEGER NOT NULL DEFAULT 0,   -- BOOLEAN (0/1)
+
+            -- Source metadata
+            source_type          TEXT    DEFAULT 'aggregator',
+            ota_platform         TEXT,
+            fare_class           TEXT    DEFAULT 'UNKNOWN',
 
             -- Audit
             source_file          TEXT,
             ingestion_timestamp  DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Safe ALTER TABLE migrations for existing databases (SQLite ignores duplicate cols)
+    _safe_add_columns(cursor, "flight_quotes", [
+        ("is_duplicate",  "INTEGER NOT NULL DEFAULT 0"),
+        ("source_type",   "TEXT DEFAULT 'aggregator'"),
+        ("ota_platform",  "TEXT"),
+        ("fare_class",    "TEXT DEFAULT 'UNKNOWN'"),
+    ])
 
     conn.commit()
     conn.close()

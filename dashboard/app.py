@@ -129,7 +129,7 @@ with st.sidebar:
 
     st.markdown("#### ⚡ Quick Ingestion Action")
     if st.button("🚀 Extract Live Data (Sidebar)", use_container_width=True, type="primary"):
-        with st.spinner("Connecting to Ignav REST API across all 6 corridors..."):
+        with st.spinner("Connecting to Autonomous Stealth Scraping Engine across all 6 corridors..."):
             try:
                 res = scheduler_daemon.trigger_once()
                 st.toast(f"✅ Ingested {res['quotes_collected']} live flight quotes!", icon="✈️")
@@ -197,7 +197,7 @@ with st.container():
         extract_clicked = st.button("🚀 Extract Live Data Now", type="primary", use_container_width=True)
 
     if extract_clicked:
-        with st.spinner("Connecting to Ignav REST API & extracting live carrier itineraries..."):
+        with st.spinner("Connecting to Autonomous Stealth Scraping Engine & extracting live carrier itineraries..."):
             t_start = datetime.now()
             try:
                 res = scheduler_daemon.trigger_once()

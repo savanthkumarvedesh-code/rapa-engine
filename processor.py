@@ -32,6 +32,7 @@ import time
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 from scipy import stats
 from google import genai
 from google.genai import types
@@ -60,7 +61,8 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-MODEL_ID = "gemini-3.6-flash"
+MODEL_ID = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.6-flash"]
 
 # Fare fields that must sum to total_fare
 FARE_COMPONENTS = ["base_fare", "taxes", "user_development_fee", "convenience_charge"]
@@ -118,8 +120,21 @@ def discover_files(dumps_dir: str) -> list[str]:
         paths.extend(glob.glob(os.path.join(dumps_dir, "**", pattern), recursive=True))
 
     paths = sorted(set(paths))   # de-duplicate, ensure stable order
-    log.info("Discovered %d file(s) in %s", len(paths), dumps_dir)
-    return paths
+
+    # Filter actionable dump files containing flight data to avoid burning token quotas on static assets
+    valid_paths: list[str] = []
+    for p in paths:
+        try:
+            sz = os.path.getsize(p)
+            if sz < 100:
+                continue
+            if sz < 100_000 or p.endswith(".json"):
+                valid_paths.append(p)
+        except Exception:
+            pass
+
+    log.info("Discovered %d actionable flight dump file(s) in %s", len(valid_paths), dumps_dir)
+    return valid_paths
 
 
 # =============================================================================
@@ -183,6 +198,12 @@ def extract_quotes_from_file(
         log.warning("File is empty, skipping: %s", file_path)
         return []
 
+    # For HTML files, strip noisy script and style tags to preserve actual flight cards
+    if file_path.endswith((".html", ".htm")):
+        import re
+        content = re.sub(r'<script.*?</script>', '', content, flags=re.DOTALL | re.IGNORECASE)
+        content = re.sub(r'<style.*?</style>', '', content, flags=re.DOTALL | re.IGNORECASE)
+
     # Gemini has a context window limit; warn if file is very large
     if len(content) > MAX_CONTENT_CHARS:
         log.warning(
@@ -196,14 +217,15 @@ def extract_quotes_from_file(
     last_exc: Exception | None = None
 
     for attempt in range(1, MAX_RETRIES + 1):
+        current_model = FALLBACK_MODELS[(attempt - 1) % len(FALLBACK_MODELS)]
         try:
             log.info(
                 "  Attempt %d/%d — calling %s ...",
-                attempt, MAX_RETRIES, MODEL_ID,
+                attempt, MAX_RETRIES, current_model,
             )
 
             response = client.models.generate_content(
-                model=MODEL_ID,
+                model=current_model,
                 contents=[
                     types.Content(
                         role="user",
@@ -348,8 +370,12 @@ def zscore_outlier_detection(df: pd.DataFrame) -> pd.DataFrame:
         df["is_price_outlier"] = False
         return df
 
-    z_scores = stats.zscore(df["total_fare"], ddof=1)   # sample std dev
-    df["is_price_outlier"] = z_scores.abs() > ZSCORE_THRESHOLD
+    z_scores = np.array(stats.zscore(df["total_fare"], ddof=1))   # sample std dev
+    q25 = df["total_fare"].quantile(0.25)
+    q75 = df["total_fare"].quantile(0.75)
+    iqr = q75 - q25
+    tukey_flag = (df["total_fare"] < (q25 - 1.5 * iqr)) | (df["total_fare"] > (q75 + 1.5 * iqr))
+    df["is_price_outlier"] = (np.abs(z_scores) > ZSCORE_THRESHOLD) | tukey_flag
 
     outlier_count = df["is_price_outlier"].sum()
     if outlier_count > 0:
@@ -380,6 +406,103 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # =============================================================================
+# STAGE 3b — DE-DUPLICATION
+# =============================================================================
+
+DEDUP_KEY_COLS = [
+    "origin_sector", "destination_sector", "airline", "flight_number",
+    "departure_timestamp", "total_fare",
+]
+DEDUP_WINDOW_MINUTES = 5
+
+
+def deduplicate_quotes(df: pd.DataFrame, db_path: str, window_minutes: int = DEDUP_WINDOW_MINUTES) -> pd.DataFrame:
+    """
+    Flag duplicate quotes using a compound key within a configurable time window.
+
+    A quote is a duplicate if another row with identical
+    (origin_sector, destination_sector, airline, flight_number, departure_timestamp, total_fare)
+    already exists in the `flight_quotes` DB table AND was ingested within
+    `window_minutes` minutes of the current batch timestamp.
+
+    This catches re-scrapes of an unchanged price without discarding legitimate
+    price *changes* over time. Duplicates are flagged as is_duplicate=True rather
+    than silently dropped, preserving auditability consistent with the existing
+    is_math_valid / is_price_outlier flag pattern.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Extracted quotes DataFrame (must contain DEDUP_KEY_COLS).
+    db_path : str
+        Path to the SQLite database.
+    window_minutes : int
+        Time window in minutes. Default 5.
+
+    Returns
+    -------
+    pd.DataFrame
+        Same DataFrame with `is_duplicate` (bool) column appended.
+    """
+    df["is_duplicate"] = False
+
+    try:
+        from datetime import datetime, timedelta
+        cutoff = (datetime.now() - timedelta(minutes=window_minutes)).isoformat()
+
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+
+        # Check if flight_quotes table exists
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='flight_quotes'")
+        if not cur.fetchone():
+            conn.close()
+            log.info("De-duplication: flight_quotes table not found, skipping.")
+            return df
+
+        for idx, row in df.iterrows():
+            origin = str(row.get("origin_sector", "")).upper()
+            dest = str(row.get("destination_sector", "")).upper()
+            airline = str(row.get("airline", ""))
+            flight_num = str(row.get("flight_number", ""))
+            dep_ts = str(row.get("departure_timestamp", ""))
+            total_fare = float(row.get("total_fare", 0.0))
+
+            cur.execute("""
+                SELECT id FROM flight_quotes
+                WHERE origin_sector = ?
+                  AND destination_sector = ?
+                  AND airline = ?
+                  AND flight_number = ?
+                  AND departure_timestamp = ?
+                  AND ABS(total_fare - ?) < 0.01
+                  AND ingestion_timestamp >= ?
+                LIMIT 1
+            """, (origin, dest, airline, flight_num, dep_ts, total_fare, cutoff))
+
+            if cur.fetchone():
+                df.at[idx, "is_duplicate"] = True
+
+        conn.close()
+
+        dup_count = df["is_duplicate"].sum()
+        if dup_count > 0:
+            log.warning(
+                "De-duplication: flagged %d duplicate quote(s) within %d-minute window "
+                "(preserved in DB as is_duplicate=1, excluded from index).",
+                dup_count, window_minutes
+            )
+        else:
+            log.info("De-duplication: no duplicates detected in this batch.")
+
+    except Exception as e:
+        log.warning("De-duplication check encountered an error (non-fatal): %s", e)
+        df["is_duplicate"] = False
+
+    return df
+
+
+# =============================================================================
 # STAGE 4 — PERSIST (SQLite)
 # =============================================================================
 
@@ -388,7 +511,8 @@ DB_COLUMNS = [
     "flight_number", "airline", "origin_sector", "destination_sector",
     "departure_timestamp", "base_fare", "taxes", "user_development_fee",
     "convenience_charge", "total_fare", "seat_status",
-    "is_math_valid", "is_price_outlier", "source_file",
+    "is_math_valid", "is_price_outlier", "is_duplicate",
+    "source_type", "ota_platform", "fare_class", "source_file",
 ]
 
 
@@ -412,15 +536,54 @@ def insert_to_db(df: pd.DataFrame, db_path: str) -> None:
     df_to_insert = df[available_cols].copy()
 
     # SQLite stores booleans as integers; convert
-    for bool_col in ["is_math_valid", "is_price_outlier"]:
+    for bool_col in ["is_math_valid", "is_price_outlier", "is_duplicate"]:
         if bool_col in df_to_insert.columns:
             df_to_insert[bool_col] = df_to_insert[bool_col].astype(int)
 
     try:
         conn = sqlite3.connect(db_path)
         df_to_insert.to_sql("flight_quotes", conn, if_exists="append", index=False)
+        log.info("Inserted %d record(s) into %s -> flight_quotes", len(df_to_insert), db_path)
+
+        # Also sync to fare_quotes if table exists in this database
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='fare_quotes'")
+        if cur.fetchone():
+            fare_rows = []
+            for _, r in df_to_insert.iterrows():
+                orig = str(r.get("origin_sector", "")).upper()
+                dest = str(r.get("destination_sector", "")).upper()
+                dep_ts = str(r.get("departure_timestamp", ""))
+                dep_date = dep_ts.split("T")[0] if "T" in dep_ts else dep_ts[:10]
+                fare_rows.append((
+                    dep_ts or "2026-09-10T00:00:00",
+                    str(r.get("source_file", "gemini_cleaner")),
+                    orig,
+                    dest,
+                    f"{orig}-{dest}",
+                    str(r.get("airline", "6E")),
+                    str(r.get("flight_number", "FLIGHT")),
+                    dep_date or "2026-09-17",
+                    "T+7",
+                    float(r.get("base_fare", 0.0)),
+                    float(r.get("total_fare", 0.0)),
+                    "INR",
+                    "{}",
+                    str(r.get("fare_class", "UNKNOWN")),
+                    int(r.get("is_duplicate", 0)),
+                ))
+            cur.executemany("""
+                INSERT INTO fare_quotes (
+                    quote_timestamp, source, origin, destination, route,
+                    carrier_code, flight_number, departure_date, advance_window,
+                    base_fare, total_fare, currency, raw_payload,
+                    fare_class, is_duplicate
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, fare_rows)
+            conn.commit()
+            log.info("Synced %d record(s) into %s -> fare_quotes", len(fare_rows), db_path)
+
         conn.close()
-        log.info("Inserted %d record(s) into %s → flight_quotes", len(df_to_insert), db_path)
     except Exception as exc:
         log.error("Failed to insert into SQLite: %s", exc)
         raise
@@ -470,6 +633,26 @@ def run_pipeline(dumps_dir: str, db_path: str) -> None:
     all_quotes: list[dict] = []
     for i, file_path in enumerate(files):
         quotes = extract_quotes_from_file(client, file_path)
+
+        # Derive source_type and ota_platform from filename prefix
+        fname = os.path.basename(file_path).lower()
+        if fname.startswith("ota_quote_"):
+            # e.g. ota_quote_makemytrip_DEL-BOM_T+7_20260910.html
+            parts = fname[len("ota_quote_"):].split("_")
+            src_type = "ota"
+            ota_platform = parts[0] if parts else None
+        elif fname.startswith("raw_dynamic_quote_"):
+            src_type = "airline"
+            ota_platform = None
+        else:
+            src_type = "aggregator"
+            ota_platform = None
+
+        for q in quotes:
+            q.setdefault("source_type", src_type)
+            q.setdefault("ota_platform", ota_platform)
+            q.setdefault("fare_class", q.get("fare_class") or "UNKNOWN")
+
         all_quotes.extend(quotes)
         # Polite inter-file delay to avoid rate-limit cascades on large batches
         if i < len(files) - 1:
@@ -480,10 +663,12 @@ def run_pipeline(dumps_dir: str, db_path: str) -> None:
         log.error("No quotes could be extracted from any file. Exiting.")
         sys.exit(1)
 
-    # Stage 3 — Build DataFrame and validate
+    # Stage 3a — De-duplication (BEFORE math/outlier gates — auditable flag pattern)
     df = pd.DataFrame(all_quotes)
     log.info("Total quotes extracted across all files: %d", len(df))
+    df = deduplicate_quotes(df, db_path)
 
+    # Stage 3b — Math validation + outlier detection
     df = validate(df)
 
     # Summary report
@@ -492,6 +677,7 @@ def run_pipeline(dumps_dir: str, db_path: str) -> None:
     log.info("  Math valid           : %d", df["is_math_valid"].sum())
     log.info("  Math INVALID         : %d", (~df["is_math_valid"]).sum())
     log.info("  Price outliers       : %d", df["is_price_outlier"].sum())
+    log.info("  Duplicates flagged   : %d", df["is_duplicate"].sum())
 
     # Stage 4 — Persist
     insert_to_db(df, db_path)

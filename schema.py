@@ -76,6 +76,29 @@ class FlightQuote(BaseModel):
             "Must be exactly one of: 'available', 'sold-out', 'cancelled'."
         )
     )
+    source_type: Literal["airline", "ota", "aggregator"] = Field(
+        default="aggregator",
+        description=(
+            "Origin of the price quote: 'airline' for direct carrier portals, "
+            "'ota' for Online Travel Agent platforms (MakeMyTrip, Yatra, etc.), "
+            "'aggregator' for meta-search pages (Google Flights, Travelpayouts)."
+        )
+    )
+    ota_platform: str | None = Field(
+        default=None,
+        description=(
+            "Name of the OTA platform when source_type is 'ota', "
+            "e.g. 'makemytrip', 'yatra', 'ixigo'. Null for airline or aggregator sources."
+        )
+    )
+    fare_class: str = Field(
+        default="UNKNOWN",
+        description=(
+            "Fare class or booking class label as shown on the source page, "
+            "e.g. 'Economy Saver', 'Economy Flex', 'Business'. "
+            "Use 'UNKNOWN' when not visible in the source HTML."
+        )
+    )
 
 
 class FlightQuoteList(BaseModel):

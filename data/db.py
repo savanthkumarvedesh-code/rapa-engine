@@ -36,9 +36,15 @@ def init_db(db_path: str = DB_PATH) -> None:
         status TEXT NOT NULL,
         records_ingested INTEGER DEFAULT 0,
         details_json TEXT,
+        trigger_type TEXT DEFAULT 'manual',
         timestamp TEXT NOT NULL
     );
     """)
+
+    try:
+        cursor.execute("ALTER TABLE ingestion_logs ADD COLUMN trigger_type TEXT DEFAULT 'manual';")
+    except Exception:
+        pass
 
     # 2. CPI Benchmarks: Official NSO / MoSPI aggregate figures
     cursor.execute("""
@@ -63,7 +69,6 @@ def init_db(db_path: str = DB_PATH) -> None:
     );
     """)
 
-    # 3. Fare Quotes: Scaffolding for route-level quotes
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS fare_quotes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -79,9 +84,21 @@ def init_db(db_path: str = DB_PATH) -> None:
         base_fare REAL,
         total_fare REAL NOT NULL,
         currency TEXT DEFAULT 'INR',
-        raw_payload TEXT
+        raw_payload TEXT,
+        fare_class TEXT DEFAULT 'UNKNOWN',
+        is_duplicate INTEGER NOT NULL DEFAULT 0
     );
     """)
+
+    # Safe migration for existing fare_quotes databases
+    try:
+        cursor.execute("ALTER TABLE fare_quotes ADD COLUMN fare_class TEXT DEFAULT 'UNKNOWN'")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE fare_quotes ADD COLUMN is_duplicate INTEGER NOT NULL DEFAULT 0")
+    except Exception:
+        pass
 
     # 4. High-Frequency Index Values
     cursor.execute("""
@@ -102,6 +119,18 @@ def init_db(db_path: str = DB_PATH) -> None:
     );
     """)
 
+    # 5. Scheduler Runs: APScheduler state telemetry
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS scheduler_runs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        last_run_at TEXT,
+        next_run_at TEXT,
+        status TEXT NOT NULL DEFAULT 'idle',
+        cycle_result TEXT,
+        updated_at TEXT NOT NULL
+    );
+    """)
+
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_cpi_item_year ON cpi_benchmarks (item_name, year, month);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_cpi_state_sector ON cpi_benchmarks (state, sector);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_fare_route_date ON fare_quotes (route, departure_date);")
@@ -118,23 +147,44 @@ def log_ingestion(
     status: str,
     records_ingested: int = 0,
     details: Optional[Dict[str, Any]] = None,
-    db_path: str = DB_PATH
+    db_path: str = DB_PATH,
+    trigger_type: Optional[str] = None
 ) -> int:
     """Inserts a truthful, queryable audit record of an ingestion run."""
     conn = get_connection(db_path)
     try:
         cursor = conn.cursor()
-        cursor.execute("""
-        INSERT INTO ingestion_logs (source, operation, status, records_ingested, details_json, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?);
-        """, (
-            source,
-            operation,
-            status,
-            records_ingested,
-            json.dumps(details or {}),
-            datetime.now().isoformat()
-        ))
+        t_type = trigger_type or (details.get("trigger_type") if details else None) or "manual"
+        
+        # Check if trigger_type column exists
+        cursor.execute("PRAGMA table_info(ingestion_logs);")
+        cols = [r["name"] for r in cursor.fetchall()]
+        
+        if "trigger_type" in cols:
+            cursor.execute("""
+            INSERT INTO ingestion_logs (source, operation, status, records_ingested, details_json, trigger_type, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
+            """, (
+                source,
+                operation,
+                status,
+                records_ingested,
+                json.dumps(details or {}),
+                t_type,
+                datetime.now().isoformat()
+            ))
+        else:
+            cursor.execute("""
+            INSERT INTO ingestion_logs (source, operation, status, records_ingested, details_json, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?);
+            """, (
+                source,
+                operation,
+                status,
+                records_ingested,
+                json.dumps(details or {}),
+                datetime.now().isoformat()
+            ))
         conn.commit()
         return cursor.lastrowid
     finally:

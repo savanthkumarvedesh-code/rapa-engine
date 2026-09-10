@@ -62,7 +62,12 @@ def calculate_matched_index(
     conn = get_connection(db_path)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT DISTINCT date(departure_date) as ddate FROM fare_quotes ORDER BY ddate ASC;")
+    cursor.execute("""
+        SELECT DISTINCT date(departure_date) as ddate
+        FROM fare_quotes
+        WHERE COALESCE(is_duplicate, 0) = 0
+        ORDER BY ddate ASC;
+    """)
     dates = [row["ddate"] for row in cursor.fetchall()]
 
     if not dates:
@@ -86,6 +91,7 @@ def calculate_matched_index(
         SELECT route, carrier_code, flight_number, advance_window, total_fare, departure_date
         FROM fare_quotes
         WHERE date(departure_date) = date(?)
+          AND COALESCE(is_duplicate, 0) = 0
     """, (base_date,))
     base_rows = [dict(r) for r in cursor.fetchall()]
 
@@ -93,6 +99,7 @@ def calculate_matched_index(
         SELECT route, carrier_code, flight_number, advance_window, total_fare, departure_date
         FROM fare_quotes
         WHERE date(departure_date) = date(?)
+          AND COALESCE(is_duplicate, 0) = 0
     """, (target_date,))
     target_rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
@@ -216,3 +223,172 @@ def calculate_matched_index(
 
     save_index_record(result, db_path=db_path)
     return result
+
+
+# =============================================================================
+# FREQUENCY AGGREGATION — Weekly and Monthly
+# =============================================================================
+
+def _get_daily_index_series(db_path: str = DB_PATH) -> List[Dict[str, Any]]:
+    """Retrieve daily index_values rows sorted by calculation_date."""
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT calculation_date, jevons_index, naive_index
+        FROM index_values
+        WHERE LOWER(frequency) = 'daily'
+        ORDER BY calculation_date ASC
+    """)
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def aggregate_to_weekly(daily_series: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Roll up daily index values to ISO-week frequency using Jevons formula
+    (geometric mean of daily Jevons values within each ISO week) — the SAME
+    formula applied at daily granularity, ensuring mathematical consistency.
+
+    Parameters
+    ----------
+    daily_series : list of dict
+        Daily rows with keys: calculation_date, jevons_index.
+
+    Returns
+    -------
+    list of dict
+        Weekly aggregated rows, one per ISO week (YYYY-Www).
+    """
+    from datetime import date as datecls
+    import math
+
+    weekly_buckets: Dict[str, List[float]] = defaultdict(list)
+    for row in daily_series:
+        try:
+            d = datecls.fromisoformat(row["calculation_date"][:10])
+            iso_year, iso_week, _ = d.isocalendar()
+            week_key = f"{iso_year}-W{iso_week:02d}"
+            weekly_buckets[week_key].append(float(row["jevons_index"]))
+        except (ValueError, TypeError):
+            continue
+
+    results = []
+    for week_key in sorted(weekly_buckets.keys()):
+        vals = weekly_buckets[week_key]
+        # Jevons (geometric mean) of the daily Jevons values in this week
+        weekly_jevons = geometric_mean(vals)
+        results.append({
+            "period": week_key,
+            "frequency": "weekly",
+            "jevons_index": round(weekly_jevons, 4),
+            "n_days": len(vals),
+        })
+    return results
+
+
+def aggregate_to_monthly(daily_series: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Roll up daily index values to calendar-month frequency using Jevons formula
+    (geometric mean of daily Jevons values within each calendar month) — the
+    SAME formula applied at daily granularity, ensuring mathematical consistency.
+
+    Parameters
+    ----------
+    daily_series : list of dict
+        Daily rows with keys: calculation_date, jevons_index.
+
+    Returns
+    -------
+    list of dict
+        Monthly aggregated rows, one per calendar month (YYYY-MM).
+    """
+    monthly_buckets: Dict[str, List[float]] = defaultdict(list)
+    for row in daily_series:
+        try:
+            month_key = str(row["calculation_date"])[:7]  # YYYY-MM
+            monthly_buckets[month_key].append(float(row["jevons_index"]))
+        except (ValueError, TypeError):
+            continue
+
+    results = []
+    for month_key in sorted(monthly_buckets.keys()):
+        vals = monthly_buckets[month_key]
+        monthly_jevons = geometric_mean(vals)
+        results.append({
+            "period": month_key,
+            "frequency": "monthly",
+            "jevons_index": round(monthly_jevons, 4),
+            "n_days": len(vals),
+        })
+    return results
+
+
+def recompute_all_frequencies(db_path: str = DB_PATH) -> Dict[str, Any]:
+    """
+    Regenerates weekly and monthly index values from the daily series.
+    Called after new daily data lands to keep all frequencies in sync.
+
+    Saves weekly and monthly rows to index_values with the appropriate
+    frequency tag so /v1/nso-rbi/feed?frequency=weekly|monthly serve
+    non-empty, up-to-date responses.
+
+    Returns
+    -------
+    dict
+        Summary: {'daily_rows': N, 'weekly_periods': M, 'monthly_periods': K}
+    """
+    daily_series = _get_daily_index_series(db_path)
+    if not daily_series:
+        return {"daily_rows": 0, "weekly_periods": 0, "monthly_periods": 0}
+
+    weekly_agg = aggregate_to_weekly(daily_series)
+    monthly_agg = aggregate_to_monthly(daily_series)
+
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+
+    # Remove old weekly/monthly rows before re-inserting (safe idempotent recompute)
+    cursor.execute("DELETE FROM index_values WHERE LOWER(frequency) IN ('weekly', 'monthly')")
+
+    from datetime import datetime
+    now_str = datetime.now().isoformat()
+
+    for w in weekly_agg:
+        cursor.execute("""
+            INSERT INTO index_values (
+                calculation_date, base_date, frequency, jevons_index,
+                naive_index, inflation_mom, match_rate_pct,
+                matched_items_count, base_items_count, target_items_count,
+                route_breakdown_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            w["period"], daily_series[0]["calculation_date"],
+            "weekly", w["jevons_index"], w["jevons_index"],
+            round(w["jevons_index"] - 100.0, 2), 100.0,
+            w["n_days"], w["n_days"], w["n_days"], "{}", now_str
+        ))
+
+    for m in monthly_agg:
+        cursor.execute("""
+            INSERT INTO index_values (
+                calculation_date, base_date, frequency, jevons_index,
+                naive_index, inflation_mom, match_rate_pct,
+                matched_items_count, base_items_count, target_items_count,
+                route_breakdown_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            m["period"], daily_series[0]["calculation_date"],
+            "monthly", m["jevons_index"], m["jevons_index"],
+            round(m["jevons_index"] - 100.0, 2), 100.0,
+            m["n_days"], m["n_days"], m["n_days"], "{}", now_str
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "daily_rows": len(daily_series),
+        "weekly_periods": len(weekly_agg),
+        "monthly_periods": len(monthly_agg),
+    }

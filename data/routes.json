@@ -1,0 +1,111 @@
+{
+  "project": "RAPA — Real-Time Airfare Price Augmentation",
+  "description": "Target domestic city-pair routes basket, advance booking horizons, and geographic coordinates",
+  "airports": {
+    "DEL": {
+      "city": "Delhi",
+      "name": "Indira Gandhi International Airport",
+      "lat": 28.5562,
+      "lon": 77.1000,
+      "tier": "Tier-1 Metro Hub"
+    },
+    "BOM": {
+      "city": "Mumbai",
+      "name": "Chhatrapati Shivaji Maharaj International Airport",
+      "lat": 19.0896,
+      "lon": 72.8656,
+      "tier": "Tier-1 Financial Metro"
+    },
+    "BLR": {
+      "city": "Bengaluru",
+      "name": "Kempegowda International Airport",
+      "lat": 13.1986,
+      "lon": 77.7066,
+      "tier": "Tier-1 Tech Metro"
+    },
+    "CCU": {
+      "city": "Kolkata",
+      "name": "Netaji Subhash Chandra Bose International Airport",
+      "lat": 22.6547,
+      "lon": 88.4467,
+      "tier": "Tier-1 Eastern Metro"
+    },
+    "HYD": {
+      "city": "Hyderabad",
+      "name": "Rajiv Gandhi International Airport",
+      "lat": 17.2403,
+      "lon": 78.4294,
+      "tier": "Tier-1 South-Central Metro"
+    },
+    "MAA": {
+      "city": "Chennai",
+      "name": "Chennai International Airport",
+      "lat": 12.9941,
+      "lon": 80.1709,
+      "tier": "Tier-1 Southern Metro"
+    }
+  },
+  "routes": {
+    "DEL-BOM": {
+      "origin": "DEL",
+      "destination": "BOM",
+      "origin_city": "Delhi",
+      "destination_city": "Mumbai",
+      "distance_km": 1148,
+      "annual_passengers": 4820000,
+      "basket_weight": 0.25
+    },
+    "DEL-BLR": {
+      "origin": "DEL",
+      "destination": "BLR",
+      "origin_city": "Delhi",
+      "destination_city": "Bengaluru",
+      "distance_km": 1740,
+      "annual_passengers": 4120000,
+      "basket_weight": 0.22
+    },
+    "BOM-BLR": {
+      "origin": "BOM",
+      "destination": "BLR",
+      "origin_city": "Mumbai",
+      "destination_city": "Bengaluru",
+      "distance_km": 842,
+      "annual_passengers": 3280000,
+      "basket_weight": 0.18
+    },
+    "DEL-CCU": {
+      "origin": "DEL",
+      "destination": "CCU",
+      "origin_city": "Delhi",
+      "destination_city": "Kolkata",
+      "distance_km": 1305,
+      "annual_passengers": 2610000,
+      "basket_weight": 0.15
+    },
+    "BLR-HYD": {
+      "origin": "BLR",
+      "destination": "HYD",
+      "origin_city": "Bengaluru",
+      "destination_city": "Hyderabad",
+      "distance_km": 502,
+      "annual_passengers": 2150000,
+      "basket_weight": 0.10
+    },
+    "MAA-DEL": {
+      "origin": "MAA",
+      "destination": "DEL",
+      "origin_city": "Chennai",
+      "destination_city": "Delhi",
+      "distance_km": 1760,
+      "annual_passengers": 1950000,
+      "basket_weight": 0.10
+    }
+  },
+  "advance_windows": {
+    "T+1": { "days_ahead": 1, "description": "Next-day urgent travel / surge dynamic" },
+    "T+7": { "days_ahead": 7, "description": "Near-term business & short-notice booking" },
+    "T+15": { "days_ahead": 15, "description": "Mid-horizon standard booking" },
+    "T+30": { "days_ahead": 30, "description": "Advance planned booking baseline" },
+    "T+45": { "days_ahead": 45, "description": "Early leisure booking discount" }
+  }
+}

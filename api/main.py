@@ -286,9 +286,9 @@ def get_fares_collector_status():
     """Returns candidate real-time fare collector status and target route basket."""
     routes_data = load_routes_config()
     return {
-        "provider": "RAPA Dedicated Direct Airline & OTA Scraping Engine",
-        "primary_sources": "Direct Airline Portals (IndiGo, Air India, Akasa Air, SpiceJet, Air India Express)",
-        "secondary_sources": "Online Travel Aggregators (MakeMyTrip, EaseMyTrip, Cleartrip, Ixigo, Yatra, Goibibo)",
+        "provider": "RAPA Autonomous MockAir Network Scraper Engine",
+        "primary_sources": "MockAir Network Targets (SkyBlue, AeroIndia, JetNova, Falcon Air, Coral Wings)",
+        "secondary_sources": "MockAir Live Yield Engine (:4000) & Sandbox Test Harness",
         "status": "CONFIGURED" if scraper_collector.is_configured() else "STANDBY",
         "concurrency_mode": "Autonomous Multi-Threaded DOM & Stealth Harvester",
         "target_basket": routes_data
@@ -836,8 +836,11 @@ def download_server_log():
 from datetime import datetime, timedelta
 
 CARRIER_NAMES_MAP = {
-    "6E": "IndiGo", "AI": "Air India", "QP": "Akasa Air",
-    "SG": "SpiceJet", "IX": "Air India Express", "9I": "Alliance Air", "G8": "Go First"
+    "SB": "SkyBlue Airways", "AI": "AeroIndia", "JN": "JetNova Express",
+    "FA": "Falcon Air", "CW": "Coral Wings",
+    # Legacy mappings
+    "6E": "IndiGo", "QP": "Akasa Air", "SG": "SpiceJet",
+    "IX": "Air India Express", "9I": "Alliance Air", "G8": "Go First"
 }
 
 DEMO_ROUTE_PAIRS = [

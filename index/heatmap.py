@@ -13,11 +13,16 @@ from data.db import DB_PATH, get_connection
 
 SECTORS = ["DEL-BOM", "DEL-BLR", "BOM-BLR", "DEL-CCU", "BLR-HYD", "MAA-DEL"]
 HORIZONS = ["T+45", "T+30", "T+15", "T+7", "T+1"]
-CARRIERS = ["6E", "AI", "QP", "SG", "IX"]
+CARRIERS = ["SB", "AI", "JN", "FA", "CW", "6E", "QP", "SG", "IX"]
 
 CARRIER_LABELS = {
+    "SB": "SkyBlue Airways",
+    "AI": "AeroIndia",
+    "JN": "JetNova Express",
+    "FA": "Falcon Air",
+    "CW": "Coral Wings",
+    # Legacy fallbacks
     "6E": "IndiGo",
-    "AI": "Air India",
     "QP": "Akasa Air",
     "SG": "SpiceJet",
     "IX": "Air India Express"

@@ -150,7 +150,7 @@
                     <i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i>
                 </div>
                 <div class="mt-2 text-xl font-bold text-slate-900 tracking-tight">5 Airlines</div>
-                <div class="text-[11px] text-slate-500 mt-1 font-medium truncate">IndiGo, AI, Akasa, AIX, SG</div>
+                <div class="text-[11px] text-slate-500 mt-1 font-medium truncate">SkyBlue, AeroIndia, JetNova, Falcon, Coral</div>
             </div>
         </div>
 
@@ -337,11 +337,11 @@
                         <thead class="bg-slate-100 text-slate-700 uppercase font-semibold text-[10px] border-b border-slate-200">
                             <tr>
                                 <th class="py-3 px-3.5">Sector</th>
-                                <th class="py-3 px-3 text-center">IndiGo (6E)</th>
-                                <th class="py-3 px-3 text-center">Air India (AI)</th>
-                                <th class="py-3 px-3 text-center">Akasa Air (QP)</th>
-                                <th class="py-3 px-3 text-center">SpiceJet (SG)</th>
-                                <th class="py-3 px-3 text-center">AI Express (IX)</th>
+                                <th class="py-3 px-3 text-center">SkyBlue (SB)</th>
+                                <th class="py-3 px-3 text-center">AeroIndia (AI)</th>
+                                <th class="py-3 px-3 text-center">JetNova (JN)</th>
+                                <th class="py-3 px-3 text-center">Falcon Air (FA)</th>
+                                <th class="py-3 px-3 text-center">Coral Wings (CW)</th>
                             </tr>
                         </thead>
                         <tbody id="sectorCarrierHeatmapBody" class="divide-y divide-slate-200">
@@ -1105,7 +1105,17 @@
         function renderLiveQuotes(quotes) {
             const tbody = document.getElementById('liveQuotesTableBody');
             let html = '';
-            const carrierNames = {'6E': 'IndiGo', 'AI': 'Air India', 'QP': 'Akasa Air', 'IX': 'AI Express', 'SG': 'SpiceJet'};
+            const carrierNames = {
+                'SB': 'SkyBlue Airways',
+                'AI': 'AeroIndia',
+                'JN': 'JetNova Express',
+                'FA': 'Falcon Air',
+                'CW': 'Coral Wings',
+                '6E': 'IndiGo',
+                'QP': 'Akasa Air',
+                'SG': 'SpiceJet',
+                'IX': 'AI Express'
+            };
             quotes.slice(0, 50).forEach(q => {
                 const cname = carrierNames[q.carrier_code] || q.carrier_code;
                 html += `
@@ -1170,10 +1180,10 @@
                 carrierChart = new Chart(ctxCarrier, {
                     type: 'bar',
                     data: {
-                        labels: ['IndiGo (6E)', 'Air India (AI)', 'Akasa (QP)', 'AI Express (IX)', 'SpiceJet (SG)'],
+                        labels: ['SkyBlue (SB)', 'AeroIndia (AI)', 'JetNova (JN)', 'Falcon Air (FA)', 'Coral Wings (CW)'],
                         datasets: [
-                            { label: 'Base Airfare Tariff', data: [6200, 6800, 5400, 5200, 4900], backgroundColor: '#0052CC', borderRadius: 4 },
-                            { label: 'Airport Taxes & UDF', data: [1400, 1600, 1200, 1100, 1050], backgroundColor: '#F59E0B', borderRadius: 4 }
+                            { label: 'Base Airfare Tariff', data: [5800, 6900, 6100, 6400, 5600], backgroundColor: '#0052CC', borderRadius: 4 },
+                            { label: 'Airport Taxes & UDF', data: [1350, 1650, 1300, 1450, 1200], backgroundColor: '#F59E0B', borderRadius: 4 }
                         ]
                     },
                     options: {

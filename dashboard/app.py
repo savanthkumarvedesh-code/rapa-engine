@@ -36,43 +36,43 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom Styling (Dark Government Analytics Theme)
+# Custom Styling (Clean Plain Neutral Analytics Theme)
 st.markdown("""
 <style>
-    .main { background-color: #0B0E14; }
+    .main { background-color: #F8FAFC; color: #0F172A; }
     div[data-testid="stMetric"] {
-        background: rgba(22, 27, 34, 0.75);
-        border: 1px solid #30363D;
-        border-radius: 8px;
-        padding: 12px 16px;
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 16px 20px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
     }
-    div[data-testid="stMetricLabel"] { font-size: 0.85rem; color: #8B949E; }
-    div[data-testid="stMetricValue"] { font-size: 1.6rem; font-weight: 600; color: #E6EDF3; }
+    div[data-testid="stMetricLabel"] { font-size: 0.82rem; color: #64748B; font-weight: 500; }
+    div[data-testid="stMetricValue"] { font-size: 1.5rem; font-weight: 700; color: #0F172A; }
     .live-badge {
         display: inline-block;
-        background: rgba(35, 134, 54, 0.2);
-        color: #3FB950;
-        border: 1px solid #238636;
+        background: #F1F5F9;
+        color: #334155;
+        border: 1px solid #CBD5E1;
         padding: 3px 8px;
-        border-radius: 12px;
+        border-radius: 4px;
         font-size: 0.75rem;
         font-weight: 600;
     }
     .persona-badge {
         display: inline-block;
-        background: rgba(56, 139, 253, 0.15);
-        color: #58A6FF;
-        border: 1px solid #1F6FEB;
+        background: #0F172A;
+        color: #FFFFFF;
         padding: 4px 10px;
-        border-radius: 14px;
-        font-size: 0.82rem;
-        font-weight: 600;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
         margin-bottom: 8px;
     }
     .health-badge-green {
-        background: rgba(35, 134, 54, 0.2);
-        color: #3FB950;
-        border: 1px solid #238636;
+        background: #F1F5F9;
+        color: #0F172A;
+        border: 1px solid #E2E8F0;
         padding: 2px 6px;
         border-radius: 4px;
         font-size: 0.75rem;
@@ -116,9 +116,31 @@ airports_dict = routes_meta.get("airports", {})
 scheduler_info = get_scheduler_state()
 
 total_quotes = len(quotes_df)
-cpi_airfare_rows = cpi_df[cpi_df["item_name"] == "Airfare"] if not cpi_df.empty else pd.DataFrame()
-all_india_cpi = cpi_airfare_rows[(cpi_airfare_rows["state"] == "All India") & (cpi_airfare_rows["sector"] == "Combined")]
-official_cpi_val = all_india_cpi["cpi_index"].iloc[0] if not all_india_cpi.empty else 124.23
+cpi_airfare_rows = cpi_df[
+    cpi_df["item_name"].str.contains("Airfare", case=False, na=False) |
+    (cpi_df.get("is_proxy", 0) == 1)
+] if not cpi_df.empty else pd.DataFrame()
+
+all_india_cpi = cpi_airfare_rows[
+    (cpi_airfare_rows["state"] == "All India") & (cpi_airfare_rows["sector"] == "Combined")
+] if not cpi_airfare_rows.empty else pd.DataFrame()
+
+if not all_india_cpi.empty:
+    month_order = {"December": 12, "November": 11, "October": 10, "September": 9, "August": 8, "July": 7, "June": 6, "May": 5, "April": 4, "March": 3, "February": 2, "January": 1}
+    all_india_cpi = all_india_cpi.copy()
+    all_india_cpi["m_num"] = all_india_cpi["month"].map(month_order).fillna(0)
+    all_india_cpi = all_india_cpi.sort_values(by=["year", "m_num"], ascending=[False, False])
+    official_cpi_val = float(all_india_cpi["cpi_index"].iloc[0])
+    cpi_month = str(all_india_cpi["month"].iloc[0])
+    cpi_year = int(all_india_cpi["year"].iloc[0])
+    is_cpi_proxy = bool(all_india_cpi["is_proxy"].iloc[0]) if "is_proxy" in all_india_cpi.columns else True
+else:
+    official_cpi_val = 105.39
+    cpi_month = "July"
+    cpi_year = 2026
+    is_cpi_proxy = True
+
+cpi_period_label = f"{cpi_month} {cpi_year}"
 
 # Sidebar: Persona Selection & Global Controls
 with st.sidebar:
@@ -155,7 +177,7 @@ with st.sidebar:
     st.markdown(f"- **Live Microdata Quotes:** `{total_quotes:,}`")
     st.markdown(f"- **Monitored Sectors:** `{len(routes_meta.get('routes', {}))} Trunk Routes`")
     st.markdown(f"- **Lead-Time Windows:** `T+1, T+7, T+15, T+30, T+45`")
-    st.markdown(f"- **MoSPI Item 294 Benchmark:** `{official_cpi_val}` (Base 2024=100)")
+    st.markdown(f"- **MoSPI Benchmark ({cpi_period_label}):** `{official_cpi_val}` (Base 2024=100{', 07.3 Proxy' if is_cpi_proxy else ''})")
     st.markdown("---")
 
     if st.button("🔄 Manual Refresh Data", use_container_width=True):
@@ -168,35 +190,14 @@ st.markdown(f"<span class='persona-badge'>Active View: {persona}</span>", unsafe
 st.caption("High-Frequency Empirical Price Collection & Econometric Index Platform for NSO / MoSPI & Reserve Bank of India")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ⚡ LIVE DATA EXTRACTION ACTION HUB (PROMINENT TOP BANNER)
+# HERO ACTION BAR (Always visible above tabs)
 # ─────────────────────────────────────────────────────────────────────────────
-with st.container():
-    st.markdown("""
-    <div style="background: rgba(31, 111, 235, 0.1); border: 1px solid #1F6FEB; border-radius: 8px; padding: 14px 18px; margin-bottom: 16px;">
-        <h4 style="margin: 0; color: #58A6FF;">⚡ Live Flight Microdata Extraction Hub</h4>
-        <p style="margin: 4px 0 10px 0; color: #8B949E; font-size: 0.88rem;">
-            Click below to query the Ignav REST API in real-time across Indian domestic trunk routes and recompute the high-frequency Jevons Index.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col_btn1, col_btn2, col_btn3 = st.columns([2, 1, 1])
-    with col_btn1:
-        extract_scope = st.selectbox(
-            "Extraction Scope:",
-            ["All 6 Basket Corridors (DEL-BOM, DEL-BLR, BOM-BLR, DEL-CCU, BLR-HYD, MAA-DEL)", "Single Route (DEL-BOM)", "Single Route (DEL-BLR)"],
-            label_visibility="collapsed"
-        )
-    with col_btn2:
-        extract_windows = st.selectbox(
-            "Horizons:",
-            ["All 5 Horizons (T+1 to T+45)", "Near-term (T+1 & T+7)", "Single (T+7)"],
-            label_visibility="collapsed"
-        )
-    with col_btn3:
-        extract_clicked = st.button("🚀 Extract Live Data Now", type="primary", use_container_width=True)
-
-    if extract_clicked:
+col_hero_1, col_hero_2 = st.columns([3, 1])
+with col_hero_1:
+    st.markdown("##### 🚀 Rapid Production Ingestion")
+    st.caption("Trigger an instant, parallel extraction cycle across all target routes & booking horizons.")
+with col_hero_2:
+    if st.button("⚡ Collect Microdata Now", type="primary", use_container_width=True):
         with st.spinner("Connecting to Autonomous Stealth Scraping Engine & extracting live carrier itineraries..."):
             t_start = datetime.now()
             try:
@@ -217,7 +218,7 @@ naive_bias = round(latest_naive - latest_jevons, 2)
 
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Headline Jevons Index", f"{latest_jevons:.2f}", "Base = 100.0 (Geometric Mean)")
-col2.metric("Official CPI Item 294", f"{official_cpi_val:.2f}", "MoSPI Macro Benchmark")
+col2.metric("Official CPI Benchmark", f"{official_cpi_val:.2f}", f"{cpi_period_label} (07.3 Proxy)" if is_cpi_proxy else f"{cpi_period_label} Item 294")
 col3.metric("Live Quotes in DB", f"{total_quotes:,}", "Active Domestic Flights")
 col4.metric("Dynamic Yield Spread", "+62%", "T+1 vs T+45 Surge Premium")
 col5.metric("Arithmetic Bias", f"{naive_bias:+.2f} pts", "Dutot Overstatement")
@@ -526,12 +527,20 @@ elif "RBI Economists" in persona:
     # Tab R3: MoSPI CPI Item 294 Benchmark Calibration
     with tab_r3:
         st.markdown("#### MoSPI Official CPI Item 294 vs RAPA High-Frequency Microdata")
-        st.caption("Official macroeconomic benchmark tracking against MoSPI NSO eSankhyiki Airfare data.")
+        st.caption("Official macroeconomic benchmark tracking against MoSPI NSO eSankhyiki Airfare data & Group 07.3 Proxy.")
 
         if not cpi_df.empty:
-            cpi_air = cpi_df[cpi_df["item_name"] == "Airfare"]
+            cpi_air = cpi_df[
+                cpi_df["item_name"].str.contains("Airfare|Passenger transport|Transport", case=False, na=False) |
+                (cpi_df.get("is_proxy", 0) == 1)
+            ]
+            cols_to_show = ["base_year", "year", "month", "state", "sector", "item_name", "item_code", "cpi_index", "inflation"]
+            if "is_proxy" in cpi_air.columns:
+                cols_to_show.append("is_proxy")
+            if "note" in cpi_air.columns:
+                cols_to_show.append("note")
             st.dataframe(
-                cpi_air[["base_year", "year", "month", "state", "sector", "item_name", "item_code", "cpi_index"]].head(10),
+                cpi_air[[c for c in cols_to_show if c in cpi_air.columns]].head(15),
                 use_container_width=True,
                 hide_index=True
             )

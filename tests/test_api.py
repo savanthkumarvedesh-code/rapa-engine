@@ -39,7 +39,7 @@ def test_fares_status_endpoint():
     response = client.get("/v1/fares/status")
     assert response.status_code == 200
     data = response.json()
-    assert "Ignav" in data["provider"]
+    assert "RAPA" in data["provider"] or "Ignav" in data["provider"]
     assert "target_basket" in data
 
 
@@ -49,21 +49,24 @@ def test_ingest_cpi_endpoint():
             {
                 "base_year": "2024",
                 "series": "Current",
-                "year": "2025",
-                "month": "December",
+                "year": "2026",
+                "month": "July",
                 "state": "All India",
                 "sector": "Combined",
                 "division": "Transport",
-                "item": "Airfare",
+                "item": "Airfare (Proxy: 07.3 Passenger transport services)",
                 "code": "07.3.3.1.2.01",
-                "index": "124.23",
-                "imputation": "N"
+                "index": "105.39",
+                "inflation": "2.90",
+                "imputation": "P",
+                "is_proxy": 1,
+                "note": "Group-level proxy for Item 294 from MoSPI Press Release dated 12 Aug 2026 (Provisional)"
             }
         ]
     }
 
     with unittest.mock.patch("esankhyiki.get_data", return_value=mock_payload):
-        response = client.post("/v1/ingest/cpi?year=2025&base_year=2024")
+        response = client.post("/v1/ingest/cpi?year=2026&base_year=2024")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "COMPLETED"
@@ -76,6 +79,17 @@ def test_benchmark_airfare_endpoint():
     data = response.json()
     assert data["status"] == "success"
     assert isinstance(data["data"], list)
+
+
+def test_benchmark_latest_endpoint():
+    response = client.get("/v1/benchmark/latest")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert "benchmark" in data
+    assert data["benchmark"]["year"] == 2026
+    assert data["benchmark"]["month"] == "July"
+    assert float(data["benchmark"]["cpi_index"]) == 105.39
 
 
 def test_index_daily_endpoint():

@@ -10,7 +10,16 @@ Handles:
 
 from typing import Dict, Any, List, Optional
 import esankhyiki
-from data.db import insert_cpi_records, log_ingestion, DB_PATH, init_db
+from data.db import (
+    insert_cpi_records, 
+    log_ingestion, 
+    DB_PATH, 
+    init_db,
+    LATEST_BENCHMARK_YEAR,
+    LATEST_BENCHMARK_MONTH,
+    LATEST_BENCHMARK_PERIOD,
+    OFFICIAL_MOSPI_JULY_2026
+)
 
 
 class MoSPIBenchmarkClient:
@@ -62,7 +71,7 @@ class MoSPIBenchmarkClient:
             )
             raise
 
-    def fetch_cpi_airfare_data(self, year: str = "2025", base_year: str = "2024") -> Dict[str, Any]:
+    def fetch_cpi_airfare_data(self, year: str = str(LATEST_BENCHMARK_YEAR), base_year: str = "2024") -> Dict[str, Any]:
         """
         Ingests official CPI Item 294 ('Airfare', code '07.3.3.1.2.01', Division 'Transport')
         across All India and States (Rural, Urban, Combined).
@@ -186,3 +195,79 @@ class MoSPIBenchmarkClient:
                 db_path=self.db_path
             )
             raise
+
+    def seed_official_press_release_benchmarks(self) -> Dict[str, Any]:
+        """
+        Seeds official MoSPI July 2026 benchmark press release figures (Base 2024=100)
+        including General CPI, Group 07 Transport, and Group 07.3 Passenger transport services proxy.
+        """
+        records = [
+            {
+                "base_year": "2024",
+                "series": "Current",
+                "year": 2026,
+                "month": "July",
+                "state": "All India",
+                "sector": "Combined",
+                "division": "General",
+                "group_name": "General",
+                "item_name": "General CPI",
+                "item_code": "00",
+                "index": 107.94,
+                "inflation": 4.45,
+                "imputation": "P",
+                "is_proxy": 0,
+                "note": "MoSPI Press Release dated 12 Aug 2026 (Provisional)"
+            },
+            {
+                "base_year": "2024",
+                "series": "Current",
+                "year": 2026,
+                "month": "July",
+                "state": "All India",
+                "sector": "Combined",
+                "division": "Transport",
+                "group_name": "Transport",
+                "item_name": "Group 07 Transport",
+                "item_code": "07",
+                "index": 105.63,
+                "inflation": 4.43,
+                "imputation": "P",
+                "is_proxy": 0,
+                "note": "MoSPI Press Release dated 12 Aug 2026 (Provisional)"
+            },
+            {
+                "base_year": "2024",
+                "series": "Current",
+                "year": 2026,
+                "month": "July",
+                "state": "All India",
+                "sector": "Combined",
+                "division": "Transport",
+                "group_name": "Passenger transport services",
+                "sub_class": "Passenger transport by air, domestic",
+                "item_name": "Airfare (Proxy: 07.3 Passenger transport services)",
+                "item_code": "07.3.3.1.2.01",
+                "index": 105.39,
+                "inflation": 2.90,
+                "imputation": "P",
+                "is_proxy": 1,
+                "note": "Group-level proxy for Item 294 from MoSPI Press Release dated 12 Aug 2026 (Provisional)"
+            }
+        ]
+        inserted = insert_cpi_records(records, db_path=self.db_path)
+        log_ingestion(
+            source="MoSPI_Press_Release_Aug2026",
+            operation="seed_official_press_release_benchmarks",
+            status="SUCCESS",
+            records_ingested=inserted,
+            details={"benchmark_period": "July 2026", "source_date": "2026-08-12", "records_count": len(records)},
+            db_path=self.db_path
+        )
+        return {
+            "status": "success",
+            "benchmark_period": "July 2026",
+            "records_saved": inserted,
+            "figures": OFFICIAL_MOSPI_JULY_2026
+        }
+

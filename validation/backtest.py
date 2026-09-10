@@ -70,7 +70,7 @@ def generate_30day_dgca_backtest(db_path: str = DB_PATH) -> Dict[str, Any]:
     # (weekend load surge, mid-week drop, fuel cost adjustments)
     base_apix = 100.0
     base_dgca = 100.0
-    base_cpi = 124.23  # Official MoSPI Dec 2025 Item 294
+    base_cpi = 105.39  # Official MoSPI July 2026 Item 294 Proxy (07.3 Passenger transport services, Base 2024=100)
 
     # Weighted aggregate baseline price
     basket_baseline = sum(calibrated_anchors[r] * DGCA_ROUTE_WEIGHTS[r] for r in DGCA_ROUTE_WEIGHTS)

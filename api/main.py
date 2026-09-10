@@ -29,6 +29,7 @@ from pydantic import BaseModel
 from data.db import (
     init_db,
     get_cpi_benchmarks,
+    get_latest_benchmark,
     get_ingestion_logs,
     get_all_index_records,
     get_connection,
@@ -131,23 +132,28 @@ class CustomIndexRequest(BaseModel):
 
 
 from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
-PORTAL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "portal", "index.html")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PORTAL_DIR = os.path.join(BASE_DIR, "portal")
+PORTAL_PATH = os.path.join(PORTAL_DIR, "index.html")
+PORTAL_STATIC_DIR = os.path.join(PORTAL_DIR, "static")
+
+# Mount portal static files if present
+if os.path.exists(PORTAL_STATIC_DIR):
+    app.mount("/portal/static", StaticFiles(directory=PORTAL_STATIC_DIR), name="portal_static")
+    app.mount("/static", StaticFiles(directory=PORTAL_STATIC_DIR), name="static")
 
 
 @app.get("/", response_class=HTMLResponse, tags=["System"])
+@app.get("/portal", response_class=HTMLResponse, tags=["System"])
+@app.get("/portal/index.html", response_class=HTMLResponse, tags=["System"])
 def root():
     """Serves the RAPA Executive Multi-Persona Web Portal."""
     if os.path.exists(PORTAL_PATH):
         with open(PORTAL_PATH, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>RAPA Portal</h1><p>Visit <a href='/docs'>/docs</a> for API.</p>")
-
-
-@app.get("/portal", response_class=HTMLResponse, tags=["System"])
-def get_portal():
-    """Direct route to RAPA Multi-Persona Web Portal."""
-    return root()
 
 
 
@@ -157,7 +163,7 @@ def health_check():
     conn = get_connection(DB_PATH)
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT COUNT(*) FROM cpi_benchmarks WHERE item_code = '07.3.3.1.2.01' OR item_name = 'Airfare'")
+        cursor.execute("SELECT COUNT(*) FROM cpi_benchmarks WHERE item_code = '07.3.3.1.2.01' OR item_name LIKE '%Airfare%' OR is_proxy = 1")
         airfare_cpi_count = cursor.fetchone()[0]
 
         cursor.execute("SELECT COUNT(*) FROM cpi_benchmarks")
@@ -240,23 +246,34 @@ def get_cpi_metadata(base_year: str = Query("2024", description="Base Year (2024
 def get_cpi_airfare(
     state: Optional[str] = Query(None, description="State (e.g. 'All India', 'Delhi', 'Maharashtra')"),
     sector: Optional[str] = Query(None, description="Sector ('Rural', 'Urban', 'Combined')"),
-    year: Optional[int] = Query(None, description="Reference year (e.g. 2025)"),
+    year: Optional[int] = Query(None, description="Reference year (e.g. 2026)"),
     limit: int = Query(50, ge=1, le=500)
 ):
-    """Retrieves official MoSPI Item 294 Airfare benchmark index records (Base 2024=100)."""
+    """Retrieves official MoSPI Item 294 Airfare benchmark index records (Base 2024=100) or Group 07.3 Proxy."""
     records = get_cpi_benchmarks(item_name="Airfare", state=state, sector=sector, year=year, limit=limit, db_path=DB_PATH)
     return {
         "status": "success",
-        "item": "Airfare (Item 294 / 07.3.3.1.2.01)",
-        "source": "MoSPI eSankhyiki Official CPI",
+        "item": "Airfare (Item 294 / 07.3.3.1.2.01 / Group 07.3 Proxy)",
+        "source": "MoSPI Official CPI (Base 2024=100)",
         "returned_count": len(records),
         "data": records
     }
 
 
+@app.get("/v1/benchmark/latest", tags=["1. CPI Benchmark"])
+def get_latest_cpi_benchmark_endpoint():
+    """Retrieves the latest available official MoSPI CPI benchmark (July 2026, 07.3 Proxy, Base 2024=100)."""
+    benchmark = get_latest_benchmark(db_path=DB_PATH)
+    return {
+        "status": "success",
+        "benchmark_period": f"{benchmark.get('month')} {benchmark.get('year')}",
+        "benchmark": benchmark
+    }
+
+
 @app.post("/v1/ingest/cpi", tags=["1. CPI Benchmark"])
 def trigger_cpi_ingestion(
-    year: str = Query("2025", description="Target CPI year to fetch"),
+    year: str = Query("2026", description="Target CPI year to fetch"),
     base_year: str = Query("2024", description="Base year (2024 for Item 294 Airfare)")
 ):
     """Executes live ingestion of official CPI data from MoSPI eSankhyiki."""

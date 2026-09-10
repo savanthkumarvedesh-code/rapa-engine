@@ -4,10 +4,12 @@
 # ─────────────────────────────────────────────
 
 CARRIER_NAMES_MAP = {
-    "SB": "SkyBlue Airways", "AI": "AeroIndia", "JN": "JetNova Express",
-    "FA": "Falcon Air", "CW": "Coral Wings",
-    "6E": "IndiGo", "QP": "Akasa Air", "SG": "SpiceJet",
-    "IX": "Air India Express", "G8": "Go First"
+    "6E": "IndiGo",
+    "AI": "Air India",
+    "QP": "Akasa Air",
+    "SG": "SpiceJet",
+    "IX": "Air India Express",
+    "9I": "Alliance Air"
 }
 
 DEMO_ROUTES = [

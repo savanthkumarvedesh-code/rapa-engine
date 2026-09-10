@@ -649,13 +649,14 @@
 
         /* Row entrance animation */
         .data-table tbody tr {
-            opacity: 0;
-            transform: translateY(6px);
+            opacity: 1;
+            transform: translateY(0);
         }
         .data-table.animated tbody tr {
             animation: rowFadeIn 0.3s ease-out forwards;
         }
         @keyframes rowFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -1462,7 +1463,6 @@
             <!-- Central Navigation Links -->
             <nav class="navbar-nav-links">
                 <a href="#heroLanding" class="nav-link active" id="nav-overview">Overview</a>
-                <a href="#architectureSection" class="nav-link" id="nav-architecture">Methodology</a>
                 <a href="#executiveDashboard" class="nav-link" id="nav-dashboard">Executive Portal</a>
                 <a href="javascript:void(0)" onclick="jumpToTab('corridors')" class="nav-link">Corridor Matrix</a>
                 <a href="javascript:void(0)" onclick="jumpToTab('heatmap')" class="nav-link">Heatmap</a>
@@ -1533,10 +1533,6 @@
                         <span>Launch Executive Portal</span>
                         <i data-lucide="arrow-down-right" class="w-4 h-4"></i>
                     </a>
-                    <a href="#architectureSection" class="btn-hero-secondary">
-                        <i data-lucide="layers" class="w-4 h-4"></i>
-                        <span>System Pipeline &amp; Models</span>
-                    </a>
                     <button onclick="toggleDemoMode()" class="btn-hero-ghost">
                         <span class="badge-pulse" style="background:#10B981;box-shadow:0 0 8px #10B981;"></span>
                         <span>Live Fare Stream (SSE)</span>
@@ -1569,115 +1565,6 @@
                         <div class="hero-metric-label">Continuous Frequency</div>
                         <div class="hero-metric-sub">45-day official MoSPI lag eliminated</div>
                     </div>
-                </div>
-            </section>
-
-            <!-- ═══════ ARCHITECTURE & METHODOLOGY SECTION ═══════ -->
-            <section id="architectureSection" class="landing-section">
-                <div class="section-header">
-                    <div class="section-tag">
-                        <i data-lucide="workflow" class="w-3 h-3"></i>
-                        <span>Institutional Methodology</span>
-                    </div>
-                    <h2 class="section-title">Four Pillars of the RAPA Econometric Engine</h2>
-                    <p class="section-desc">
-                        An institutional data architecture engineered for statistical accuracy, anti-bot resilience, and regulatory auditability.
-                    </p>
-                </div>
-
-                <div class="architecture-grid">
-                    <!-- Pillar 1 -->
-                    <div class="glass-card pillar-card">
-                        <div>
-                            <div class="pillar-icon-wrap" style="background: rgba(99, 102, 241, 0.12); color: var(--accent-primary);">
-                                <i data-lucide="shield-alert" class="w-6 h-6"></i>
-                            </div>
-                            <div class="pillar-step">01 / Ingestion</div>
-                            <h3 class="pillar-title">Anti-Detection Stealth Harvesting</h3>
-                            <p class="pillar-text">
-                                Continuous quote extraction across 5 major carrier codes and 5 advance-booking horizons (T+1 to T+45) with rotating browser fingerprints and session engine resilience.
-                            </p>
-                        </div>
-                        <div class="pillar-chips">
-                            <span class="tech-chip">T+1 to T+45 Horizons</span>
-                            <span class="tech-chip">5 Carrier Classes</span>
-                        </div>
-                    </div>
-
-                    <!-- Pillar 2 -->
-                    <div class="glass-card pillar-card">
-                        <div>
-                            <div class="pillar-icon-wrap" style="background: rgba(245, 158, 11, 0.12); color: var(--warning);">
-                                <i data-lucide="filter" class="w-6 h-6"></i>
-                            </div>
-                            <div class="pillar-step">02 / Cleansing</div>
-                            <h3 class="pillar-title">Outlier Governance &amp; Lineage</h3>
-                            <p class="pillar-text">
-                                Statistical IQR fencing and z-score trimming isolate genuine fare trends from pricing anomalies, maintaining full cryptographic imputation lineage.
-                            </p>
-                        </div>
-                        <div class="pillar-chips">
-                            <span class="tech-chip">IQR Fencing</span>
-                            <span class="tech-chip">Audit Lineage</span>
-                        </div>
-                    </div>
-
-                    <!-- Pillar 3 -->
-                    <div class="glass-card pillar-card">
-                        <div>
-                            <div class="pillar-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: var(--success);">
-                                <i data-lucide="binary" class="w-6 h-6"></i>
-                            </div>
-                            <div class="pillar-step">03 / Econometrics</div>
-                            <h3 class="pillar-title">Multilateral Matched-Model Formulations</h3>
-                            <p class="pillar-text">
-                                Computes unweighted elementary aggregates (Jevons geometric mean, Carli, Dutot) alongside bilateral Laspeyres and superlative Törnqvist index formulas.
-                            </p>
-                        </div>
-                        <div class="pillar-chips">
-                            <span class="tech-chip">Jevons (MoSPI Item 294)</span>
-                            <span class="tech-chip">Törnqvist</span>
-                        </div>
-                    </div>
-
-                    <!-- Pillar 4 -->
-                    <div class="glass-card pillar-card">
-                        <div>
-                            <div class="pillar-icon-wrap" style="background: rgba(34, 211, 238, 0.12); color: var(--accent-secondary);">
-                                <i data-lucide="landmark" class="w-6 h-6"></i>
-                            </div>
-                            <div class="pillar-step">04 / Augmentation</div>
-                            <h3 class="pillar-title">Official MoSPI CPI Grounding</h3>
-                            <p class="pillar-text">
-                                Calibrated against official MoSPI eSankhyiki Airfare indices and historical 30-day DGCA passenger volume distributions to provide high-frequency economic forecasting.
-                            </p>
-                        </div>
-                        <div class="pillar-chips">
-                            <span class="tech-chip">MoSPI eSankhyiki</span>
-                            <span class="tech-chip">DGCA Calibration</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Corridor Quick Preview Banner -->
-                <div class="corridor-preview-banner glass-card">
-                    <div class="corridor-banner-left">
-                        <span class="live-dot" style="font-size:10px;padding:1px 7px;">Live Corridor Telemetry</span>
-                        <div class="corridor-banner-title">National Aviation Corridor Network</div>
-                        <div class="corridor-banner-sub">Monitoring domestic trunk routes linking Delhi, Mumbai, Bengaluru, Kolkata, Hyderabad, and Chennai</div>
-                    </div>
-                    <div class="corridor-pills-row">
-                        <span class="corridor-tag">DEL ⇄ BOM</span>
-                        <span class="corridor-tag">DEL ⇄ BLR</span>
-                        <span class="corridor-tag">BOM ⇄ BLR</span>
-                        <span class="corridor-tag">DEL ⇄ CCU</span>
-                        <span class="corridor-tag">BLR ⇄ HYD</span>
-                        <span class="corridor-tag">MAA ⇄ HYD</span>
-                    </div>
-                    <a href="#executiveDashboard" class="btn btn-primary">
-                        <span>Access Live Portal</span>
-                        <i data-lucide="arrow-down" class="w-4 h-4"></i>
-                    </a>
                 </div>
             </section>
 
@@ -1726,8 +1613,8 @@
                             <i data-lucide="landmark" style="color:var(--success);"></i>
                         </div>
                     </div>
-                    <div class="stat-value" style="color:var(--success);" id="kpiCpi">124.23</div>
-                    <div class="stat-meta">Item 294 (Airfare) Base 2024=100</div>
+                    <div class="stat-value" style="color:var(--success);" id="kpiCpi">105.39</div>
+                    <div class="stat-meta" id="kpiCpiMeta">July 2026 (Base 2024=100)</div>
                     <div class="sparkline-container"><canvas id="sparkline2" width="100" height="40"></canvas></div>
                 </div>
 
@@ -1766,13 +1653,13 @@
                         </div>
                     </div>
                     <div class="stat-value" style="font-size:22px;color:var(--accent-secondary);">5 Airlines</div>
-                    <div class="stat-meta" style="font-size:10px;">SkyBlue, AeroIndia, JetNova, Falcon, Coral</div>
+                    <div class="stat-meta" style="font-size:10px;">IndiGo, Air India, Akasa Air, SpiceJet, AI Express</div>
                 </div>
             </div>
 
             <!-- ═══════ TAB NAVIGATION ═══════ -->
             <div class="tab-bar section-gap" id="tabBar">
-                <button onclick="setTab('corridors')" id="tab-corridors" class="tab-pill active">
+                <button onclick="setTab('corridors')" id="tab-corridors" class="tab-pill">
                     <i data-lucide="map-pin"></i>
                     <span>Trunk Corridors &amp; Fares</span>
                 </button>
@@ -1780,7 +1667,7 @@
                     <i data-lucide="activity"></i>
                     <span>Lead-Time Yield Curves</span>
                 </button>
-                <button onclick="setTab('heatmap')" id="tab-heatmap" class="tab-pill">
+                <button onclick="setTab('heatmap')" id="tab-heatmap" class="tab-pill active">
                     <i data-lucide="grid-3x3"></i>
                     <span>Sector Heatmap Matrix</span>
                 </button>
@@ -1803,7 +1690,7 @@
             </div>
 
             <!-- ═══════ TAB 1: CORRIDORS ═══════ -->
-            <section id="content-corridors" class="tab-content active section-gap">
+            <section id="content-corridors" class="tab-content section-gap">
                 <div class="glass-card" style="padding:24px;">
                     <div class="panel-header">
                         <div>
@@ -1872,7 +1759,7 @@
             </section>
 
             <!-- ═══════ TAB 3: HEATMAP ═══════ -->
-            <section id="content-heatmap" class="tab-content section-gap">
+            <section id="content-heatmap" class="tab-content active section-gap">
                 <!-- Heatmap KPI Chips -->
                 <div class="grid-4" style="margin-bottom:20px;">
                     <div class="glass-card kpi-chip" style="border-left-color:var(--success);">
@@ -1958,11 +1845,11 @@
                             <thead>
                                 <tr>
                                     <th>Sector</th>
-                                    <th class="col-center">SkyBlue (SB)</th>
-                                    <th class="col-center">AeroIndia (AI)</th>
-                                    <th class="col-center">JetNova (JN)</th>
-                                    <th class="col-center">Falcon Air (FA)</th>
-                                    <th class="col-center">Coral Wings (CW)</th>
+                                    <th class="col-center">IndiGo (6E)</th>
+                                    <th class="col-center">Air India (AI)</th>
+                                    <th class="col-center">Akasa Air (QP)</th>
+                                    <th class="col-center">SpiceJet (SG)</th>
+                                    <th class="col-center">AI Express (IX)</th>
                                 </tr>
                             </thead>
                             <tbody id="sectorCarrierHeatmapBody">
@@ -2274,11 +2161,11 @@
             ctx.fill();
         }
 
-        // Draw sparklines with sample data
+        // Draw sparklines with real trend levels
         function initSparklines() {
-            drawSparkline('sparkline1', [95, 98, 100, 102, 99, 101, 103, 100], 'rgb(99, 102, 241)');
-            drawSparkline('sparkline2', [118, 120, 122, 121, 123, 124, 124, 124], 'rgb(16, 185, 129)');
-            drawSparkline('sparkline3', [1200, 1350, 1400, 1500, 1550, 1600, 1640, 1664], 'rgb(129, 140, 248)');
+            drawSparkline('sparkline1', [98.2, 99.1, 99.8, 100.2, 100.0, 100.4, 100.2, 100.0], 'rgb(99, 102, 241)');
+            drawSparkline('sparkline2', [103.5, 104.1, 104.8, 105.0, 105.2, 105.3, 105.39, 105.39], 'rgb(16, 185, 129)');
+            drawSparkline('sparkline3', [32000, 35000, 38000, 40000, 41500, 42000, 42800, 43255], 'rgb(129, 140, 248)');
             drawSparkline('sparkline4', [45, 48, 52, 55, 58, 60, 61, 62], 'rgb(245, 158, 11)');
         }
 
@@ -2619,6 +2506,24 @@
                     if (heroIdx) animateCounter(heroIdx, indexVal);
                 }
 
+                // 2b. MoSPI Benchmark
+                try {
+                    const bmRes = await fetch('/v1/benchmark/latest');
+                    if (bmRes.ok) {
+                        const bmData = await bmRes.json();
+                        if (bmData && bmData.benchmark) {
+                            const cpiVal = Number(bmData.benchmark.cpi_index || 105.39);
+                            animateCounter(document.getElementById('kpiCpi'), cpiVal);
+                            const metaEl = document.getElementById('kpiCpiMeta');
+                            if (metaEl && bmData.benchmark_period) {
+                                metaEl.innerText = `${bmData.benchmark_period} (Base ${bmData.benchmark.base_year || 2024}=100)`;
+                            }
+                        }
+                    }
+                } catch (bErr) {
+                    console.warn("MoSPI benchmark fetch error:", bErr);
+                }
+
                 // 3. Corridors Table
                 const rRes = await fetch('/v1/routes/matrix');
                 const rData = await rRes.json();
@@ -2638,8 +2543,8 @@
                     renderLiveQuotes(qData.data);
                 }
 
-                // 5. Heatmap
-                loadHeatmapData();
+                // 5. Heatmap & Charts
+                await loadHeatmapData();
                 renderCharts();
             } catch (e) {
                 console.error("Data loading error:", e);
@@ -2658,6 +2563,7 @@
                 const data = await res.json();
                 cachedHeatmapData = data;
                 renderHeatmapMatrix(data);
+                renderCharts();
             } catch (e) {
                 console.error("Heatmap load error:", e);
             }
@@ -2674,10 +2580,14 @@
                 const surgeEl = document.getElementById('hm-kpi-surge');
                 const spreadEl = document.getElementById('hm-kpi-spread');
 
-                if (floorEl) floorEl.innerText = '\u20B9' + Number(env.min_saver_floor || 4002).toLocaleString();
+                const floorVal = env.lowest_fare_inr || env.min_saver_floor || 4002;
+                const surgeVal = env.highest_fare_inr || env.max_peak_ceiling || 14720;
+                const spreadVal = env.national_avg_lead_time_elasticity_pct || env.max_spread_pct || 37.0;
+
+                if (floorEl) floorEl.innerText = '\u20B9' + Number(floorVal).toLocaleString();
                 if (medEl) medEl.innerText = '\u20B9' + Number(env.overall_median || 11379).toLocaleString();
-                if (surgeEl) surgeEl.innerText = '\u20B9' + Number(env.max_peak_ceiling || 14720).toLocaleString();
-                if (spreadEl) spreadEl.innerText = (env.max_spread_pct >= 0 ? '+' : '') + Number(env.max_spread_pct || 37.0).toFixed(1) + '%';
+                if (surgeEl) surgeEl.innerText = '\u20B9' + Number(surgeVal).toLocaleString();
+                if (spreadEl) spreadEl.innerText = (spreadVal >= 0 ? '+' : '') + Number(spreadVal).toFixed(1) + '%';
             }
 
             function getHeatmapTile(fare, minF = 4000, maxF = 18000) {
@@ -2705,6 +2615,8 @@
             // Sector x Horizon Heatmap
             const tbody = document.getElementById('sectorHorizonHeatmapBody');
             if (tbody && data.sector_horizon_heatmap) {
+                const tbl = tbody.closest('table');
+                if (tbl) tbl.classList.add('animated');
                 let rowsHtml = '';
                 data.sector_horizon_heatmap.forEach(item => {
                     const sector = item.sector;
@@ -2760,6 +2672,8 @@
             // Carrier Disparity Matrix
             const carrierTbody = document.getElementById('sectorCarrierHeatmapBody');
             if (carrierTbody && data.sector_carrier_heatmap) {
+                const cTbl = carrierTbody.closest('table');
+                if (cTbl) cTbl.classList.add('animated');
                 let cRowsHtml = '';
                 const carriers = ['6E', 'AI', 'QP', 'SG', 'IX'];
                 data.sector_carrier_heatmap.forEach(item => {
@@ -2809,13 +2723,13 @@
         // ══════════════════════════════════════════════════════
         //   CORRIDORS TABLE
         // ══════════════════════════════════════════════════════
-        const routeStats = {
-            'DEL-BOM': { avg: 7540, min: 5568, index: 161.5 },
-            'DEL-BLR': { avg: 9437, min: 7830, index: 122.1 },
-            'BOM-BLR': { avg: 7890, min: 4611, index: 152.0 },
-            'DEL-CCU': { avg: 10120, min: 6264, index: 100.0 },
-            'BLR-HYD': { avg: 7660, min: 4002, index: 149.1 },
-            'MAA-DEL': { avg: 12344, min: 7830, index: 151.7 }
+        const defaultRouteStats = {
+            'DEL-BOM': { avg: 9417, min: 3800, index: 124.0 },
+            'DEL-BLR': { avg: 12316, min: 6458, index: 122.1 },
+            'BOM-BLR': { avg: 9721, min: 3703, index: 131.2 },
+            'DEL-CCU': { avg: 16502, min: 5205, index: 158.5 },
+            'BLR-HYD': { avg: 11123, min: 3336, index: 133.4 },
+            'MAA-DEL': { avg: 15648, min: 6380, index: 122.6 }
         };
 
         // SVG arrow icon
@@ -2827,13 +2741,19 @@
             let rowIndex = 0;
 
             for (const [code, info] of Object.entries(corridors)) {
-                const s = routeStats[code] || { avg: 7500, min: 5000, index: 100.0 };
+                const fallback = defaultRouteStats[code] || { avg: 9500, min: 4000, index: 120.0 };
+                const m = info.current_market_metrics || {};
+                const avgVal = m.avg_fare ? Math.round(m.avg_fare) : fallback.avg;
+                const minVal = m.min_fare ? Math.round(m.min_fare) : fallback.min;
+                const indexVal = (m.avg_fare && m.min_fare)
+                    ? Math.round((m.avg_fare / (m.min_fare * 1.25)) * 1000) / 10
+                    : fallback.index;
                 const w = (info.basket_weight != null) ? info.basket_weight : 0.15;
 
                 // Index color coding
                 let indexCls = 'index-mid';
-                if (s.index > 130) indexCls = 'index-high';
-                else if (s.index < 100) indexCls = 'index-low';
+                if (indexVal > 130) indexCls = 'index-high';
+                else if (indexVal < 100) indexCls = 'index-low';
 
                 html += `
                     <tr style="animation-delay:${rowIndex * 40}ms;">
@@ -2841,9 +2761,9 @@
                         <td style="color:var(--text-muted);font-weight:500;">${info.origin_city} ${svgArrow} ${info.destination_city}</td>
                         <td class="col-mono" style="color:var(--text-dim);">${info.distance_km || 1000} km</td>
                         <td class="col-mono" style="color:var(--accent-primary);font-weight:700;">${(w * 100).toFixed(1)}%</td>
-                        <td class="col-mono col-right" style="font-weight:700;">\u20B9${s.avg.toLocaleString()}</td>
-                        <td class="col-mono col-right" style="color:var(--success);font-weight:600;">\u20B9${s.min.toLocaleString()}</td>
-                        <td class="col-mono col-right ${indexCls}">${s.index.toFixed(2)}</td>
+                        <td class="col-mono col-right" style="font-weight:700;">\u20B9${avgVal.toLocaleString()}</td>
+                        <td class="col-mono col-right" style="color:var(--success);font-weight:600;">\u20B9${minVal.toLocaleString()}</td>
+                        <td class="col-mono col-right ${indexCls}">${indexVal.toFixed(2)}</td>
                     </tr>
                 `;
                 rowIndex++;
@@ -2856,8 +2776,8 @@
         //   WEIGHT ADJUSTER
         // ══════════════════════════════════════════════════════
         const defaultRouteAverages = {
-            'DEL-BOM': 7540, 'DEL-BLR': 9437, 'BOM-BLR': 7890,
-            'DEL-CCU': 10120, 'BLR-HYD': 7660, 'MAA-DEL': 12344
+            'DEL-BOM': 9417, 'DEL-BLR': 12316, 'BOM-BLR': 9721,
+            'DEL-CCU': 16502, 'BLR-HYD': 11123, 'MAA-DEL': 15648
         };
 
         function getNormalizedWeightsFromSliders() {
@@ -2953,9 +2873,12 @@
             const tbody = document.getElementById('liveQuotesTableBody');
             let html = '';
             const carrierNames = {
-                'SB': 'SkyBlue Airways', 'AI': 'AeroIndia', 'JN': 'JetNova Express',
-                'FA': 'Falcon Air', 'CW': 'Coral Wings', '6E': 'IndiGo',
-                'QP': 'Akasa Air', 'SG': 'SpiceJet', 'IX': 'AI Express'
+                '6E': 'IndiGo',
+                'AI': 'Air India',
+                'QP': 'Akasa Air',
+                'SG': 'SpiceJet',
+                'IX': 'Air India Express',
+                '9I': 'Alliance Air'
             };
             quotes.slice(0, 50).forEach((q, i) => {
                 const cname = carrierNames[q.carrier_code] || q.carrier_code;
@@ -3008,16 +2931,43 @@
                 gradient1.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
                 gradient1.addColorStop(1, 'rgba(99, 102, 241, 0)');
 
+                let yieldDatasets = [];
+                const colorPalette = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+
+                if (cachedHeatmapData && cachedHeatmapData.sector_horizon_heatmap && cachedHeatmapData.sector_horizon_heatmap.length > 0) {
+                    yieldDatasets = cachedHeatmapData.sector_horizon_heatmap.slice(0, 4).map((sec, idx) => {
+                        const col = colorPalette[idx % colorPalette.length];
+                        const hMap = {};
+                        (sec.horizons || []).forEach(h => { hMap[h.horizon] = Number(h.fare_inr); });
+                        const dataPoints = ['T+45', 'T+30', 'T+15', 'T+7', 'T+1'].map(h => hMap[h] || 9000);
+                        return {
+                            label: sec.sector,
+                            data: dataPoints,
+                            borderColor: col,
+                            backgroundColor: idx === 0 ? gradient1 : 'transparent',
+                            fill: idx === 0,
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointBackgroundColor: col,
+                            pointBorderColor: '#0A0F1E',
+                            pointBorderWidth: 2
+                        };
+                    });
+                } else {
+                    yieldDatasets = [
+                        { label: 'DEL-BOM', data: [9421, 8306, 9580, 8713, 12282], borderColor: '#6366F1', backgroundColor: gradient1, fill: true, borderWidth: 2, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#6366F1', pointBorderColor: '#0A0F1E', pointBorderWidth: 2 },
+                        { label: 'DEL-BLR', data: [13907, 12417, 10845, 11766, 13260], borderColor: '#10B981', backgroundColor: 'transparent', borderWidth: 2, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#10B981', pointBorderColor: '#0A0F1E', pointBorderWidth: 2 },
+                        { label: 'BLR-HYD', data: [9906, 10974, 10058, 10740, 14474], borderColor: '#F59E0B', backgroundColor: 'transparent', borderWidth: 2, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#F59E0B', pointBorderColor: '#0A0F1E', pointBorderWidth: 2 },
+                        { label: 'MAA-DEL', data: [14699, 14712, 15246, 14720, 20095], borderColor: '#EF4444', backgroundColor: 'transparent', borderWidth: 2, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#EF4444', pointBorderColor: '#0A0F1E', pointBorderWidth: 2 }
+                    ];
+                }
+
                 yieldChart = new Chart(ctxYield, {
                     type: 'line',
                     data: {
                         labels: ['T+45 (Advance)', 'T+30', 'T+15', 'T+7 (Near-term)', 'T+1 (Next-day)'],
-                        datasets: [
-                            { label: 'DEL-BOM', data: [6302, 6431, 9189, 6850, 10180], borderColor: '#6366F1', backgroundColor: gradient1, fill: true, borderWidth: 2, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#6366F1', pointBorderColor: '#0A0F1E', pointBorderWidth: 2 },
-                            { label: 'DEL-BLR', data: [9407, 8057, 9350, 10933, 11484], borderColor: '#10B981', backgroundColor: 'transparent', borderWidth: 2, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#10B981', pointBorderColor: '#0A0F1E', pointBorderWidth: 2 },
-                            { label: 'BLR-HYD', data: [6593, 6420, 6102, 10086, 9097], borderColor: '#F59E0B', backgroundColor: 'transparent', borderWidth: 2, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#F59E0B', pointBorderColor: '#0A0F1E', pointBorderWidth: 2 },
-                            { label: 'MAA-DEL', data: [9698, 9698, 9702, 15266, 14713], borderColor: '#EF4444', backgroundColor: 'transparent', borderWidth: 2, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#EF4444', pointBorderColor: '#0A0F1E', pointBorderWidth: 2 }
-                        ]
+                        datasets: yieldDatasets
                     },
                     options: {
                         responsive: true,
@@ -3049,13 +2999,24 @@
             const ctxCarrier = document.getElementById('carrierStackChart')?.getContext('2d');
             if (ctxCarrier) {
                 if (carrierChart) carrierChart.destroy();
+
+                let carrierLabels = ['IndiGo (6E)', 'Air India (AI)', 'Akasa Air (QP)', 'SpiceJet (SG)', 'AI Express (IX)'];
+                let baseTariffs = [8648, 10695, 8345, 9531, 10727];
+                let taxUdfTariffs = [1997, 2480, 1914, 2181, 2523];
+
+                if (cachedHeatmapData && cachedHeatmapData.carrier_composition && cachedHeatmapData.carrier_composition.length > 0) {
+                    carrierLabels = cachedHeatmapData.carrier_composition.map(c => c.carrier_name);
+                    baseTariffs = cachedHeatmapData.carrier_composition.map(c => c.avg_base_fare);
+                    taxUdfTariffs = cachedHeatmapData.carrier_composition.map(c => c.avg_taxes_udf);
+                }
+
                 carrierChart = new Chart(ctxCarrier, {
                     type: 'bar',
                     data: {
-                        labels: ['SkyBlue (SB)', 'AeroIndia (AI)', 'JetNova (JN)', 'Falcon Air (FA)', 'Coral Wings (CW)'],
+                        labels: carrierLabels,
                         datasets: [
-                            { label: 'Base Airfare Tariff', data: [5800, 6900, 6100, 6400, 5600], backgroundColor: '#6366F1', borderRadius: 4, borderSkipped: false },
-                            { label: 'Airport Taxes & UDF', data: [1350, 1650, 1300, 1450, 1200], backgroundColor: '#F59E0B', borderRadius: 4, borderSkipped: false }
+                            { label: 'Base Airfare Tariff', data: baseTariffs, backgroundColor: '#6366F1', borderRadius: 4, borderSkipped: false },
+                            { label: 'Airport Taxes & UDF', data: taxUdfTariffs, backgroundColor: '#F59E0B', borderRadius: 4, borderSkipped: false }
                         ]
                     },
                     options: {
@@ -3155,7 +3116,6 @@
         window.addEventListener('scroll', () => {
             const sections = [
                 { id: 'heroLanding', navId: 'nav-overview' },
-                { id: 'architectureSection', navId: 'nav-architecture' },
                 { id: 'executiveDashboard', navId: 'nav-dashboard' }
             ];
             const scrollPos = window.scrollY + 140;

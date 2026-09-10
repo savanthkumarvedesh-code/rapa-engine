@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAPA — Real-Time Airfare Price Analytics & Econometric CPI Engine</title>
+    <!-- Modern Sans-Serif Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- =========================================================
+         FULL-SCREEN LOADING OVERLAY (AIRCRAFT TAKEOFF ANIMATION)
+         ========================================================= -->
+    <div id="loadingOverlay" aria-label="Loading RAPA Platform">
+        <div class="flight-trail"></div>
+        <div class="aircraft-wrapper">
+            <!-- Modern Commercial Jet SVG Icon -->
+            <svg class="aircraft-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+            </svg>
+        </div>
+        <div class="loading-text">Initialising Econometric Airfare Engine...</div>
+    </div>
+
+    <!-- Background ambient glow -->
+    <div class="background-glow"></div>
+
+    <!-- =========================================================
+         STANDALONE LANDING PAGE CONTENT
+         ========================================================= -->
+    <div id="mainContent">
+
+        <!-- Navigation Bar -->
+        <header class="site-header">
+            <div class="container nav-wrap">
+                <div class="brand-badge">
+                    <div class="brand-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="brand-title">RAPA</div>
+                        <div class="brand-sub">National Airfare Surveillance</div>
+                    </div>
+                </div>
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span>Live Production Node</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Hero Section -->
+        <main>
+            <section class="hero-section">
+                <div class="container">
+                    <div class="hero-pill">
+                        <span>National Statistical System Demonstration</span>
+                    </div>
+                    
+                    <h1 class="hero-title">
+                        Real-Time Airfare Price Analytics<br>
+                        <span class="highlight">& Econometric CPI Engine</span>
+                    </h1>
+
+                    <p class="hero-tagline">
+                        National Airfare Price Index — Bridging high-frequency web scraping with official NSO & RBI inflation standards
+                    </p>
+
+                    <p class="hero-description">
+                        An institutional data platform developed to eliminate the 45-day reporting lag in India's transport inflation statistics. RAPA continuously harvests verified flight tariffs across domestic carriers and Online Travel Aggregators (OTAs), generating an axiomatic, substitution-bias-free Consumer Price Index series.
+                    </p>
+
+                    <!-- CTA Button Linking to Portal -->
+                    <div class="cta-group">
+                        <a href="/portal/index.html" class="btn-enter-portal">
+                            <span>Enter Executive Portal</span>
+                            <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <!-- Macro Summary KPI Strip -->
+                    <div class="stats-strip">
+                        <div class="stat-item">
+                            <div class="stat-val">1,600+</div>
+                            <div class="stat-desc">Live Verified Quotes</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-val">105.39</div>
+                            <div class="stat-desc">MoSPI CPI Benchmark</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-val">0.2 RPS</div>
+                            <div class="stat-desc">Ethical Harvest Rate</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-val">5 Horizons</div>
+                            <div class="stat-desc">T+1 to T+45 Stratification</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features & Methodological Pillars -->
+            <section class="features-section">
+                <div class="container">
+                    <div class="section-label">Core Methodological Pillars</div>
+                    
+                    <div class="feature-grid">
+                        <!-- Pillar 1 -->
+                        <div class="feature-card">
+                            <div class="card-header">
+                                <div class="card-badge">01</div>
+                                <h3 class="card-title">High-Frequency Indexing</h3>
+                            </div>
+                            <p class="card-body">
+                                Replaces static monthly field surveys with continuous automated price observation, providing daily and weekly leading indicators of transport inflation for the Reserve Bank of India.
+                            </p>
+                        </div>
+
+                        <!-- Pillar 2 -->
+                        <div class="feature-card">
+                            <div class="card-header">
+                                <div class="card-badge">02</div>
+                                <h3 class="card-title">MoSPI Benchmark Tracking</h3>
+                            </div>
+                            <p class="card-body">
+                                Dynamically calibrates price relatives against official MoSPI July 2026 benchmarks (Base 2024 = 100), tracking Group 07 Transport (105.63) and Group 07.3 Passenger Transport Services (105.39).
+                            </p>
+                        </div>
+
+                        <!-- Pillar 3 -->
+                        <div class="feature-card">
+                            <div class="card-header">
+                                <div class="card-badge">03</div>
+                                <h3 class="card-title">Axiomatic Jevons Index</h3>
+                            </div>
+                            <p class="card-body">
+                                Employs geometric elementary aggregation compliant with UN and ILO Time-Reversal axioms, eliminating the 2.0% to 3.5% upward substitution bias inherent in arithmetic formulas.
+                            </p>
+                        </div>
+
+                        <!-- Pillar 4 -->
+                        <div class="feature-card">
+                            <div class="card-header">
+                                <div class="card-badge">04</div>
+                                <h3 class="card-title">DGCA Passenger Weighting</h3>
+                            </div>
+                            <p class="card-body">
+                                Weights corridor price relatives by empirical passenger density (e.g., Delhi–Mumbai 25%, Delhi–Bengaluru 20%) to construct an accurate national composite index.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="site-footer">
+            <div class="container">
+                <p>RAPA Statistical Platform — National Real-Time Inflation Augmentation System</p>
+            </div>
+        </footer>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

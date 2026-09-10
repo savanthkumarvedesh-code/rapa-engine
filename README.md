@@ -1,465 +1,388 @@
-<![CDATA[<div align="center">
+# RAPA Engine
 
-# ✈️ RAPA — Real-Time Airfare Price Analytics & Econometric CPI Engine
+**Real-Time Airfare Price Augmentation — High-Frequency CPI Augmentation System**
 
-**An Intelligent, High-Frequency National Airfare Price Index for India**
-
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-[![SIH](https://img.shields.io/badge/Smart%20India%20Hackathon-2024-orange?style=for-the-badge)](https://sih.gov.in)
-
-> Powered by **FastAPI** · **Pydantic v2** · **SQLite (WAL)** · **Pandas & SciPy** · **Three.js** · **SSE Real-Time Streaming**
+Smart India Hackathon (SIH) — Ministry of Statistics and Programme Implementation (MoSPI)
 
 ---
 
-</div>
+## Overview
 
-## 📸 Executive Portal Preview
+RAPA Engine is a high-frequency airfare intelligence platform that collects, indexes, and analyzes real-time domestic flight pricing across India's six major trunk aviation corridors. The system augments the official MoSPI Consumer Price Index (CPI) Item 294 (Airfare, Base 2024=100) with live market-rate fare microdata, enabling more accurate and timely cost-of-living measurement in the transportation sub-component.
 
-<div align="center">
+The platform runs a multi-phase data pipeline:
 
-| Hero Landing Page | Architecture Section |
-|:-:|:-:|
-| Glassmorphism hero with live metrics | Four-pillar system architecture |
-
-| Executive Dashboard | Live Price Heatmap |
-|:-:|:-:|
-| Real-time KPIs and flight data | Sector-carrier elasticity matrix |
-
-</div>
+1. **Static Stealth Harvester** — Scrapes raw fare HTML from carrier endpoints across 6 routes x 5 booking horizons
+2. **Dynamic Session Engine** — Playwright-based DOM capture for JavaScript-rendered fare pages
+3. **Gemini Flash Parsing Pipeline** — AI-powered extraction of structured fare records from raw HTML dumps
+4. **Index Computation** — Matched-item Jevons geometric index calculated against a December 2025 baseline
+5. **MoSPI Calibration** — Statistical divergence analysis against official CPI Item 294 benchmark values
+6. **FastAPI Portal** — REST API and web dashboard serving all computed metrics
 
 ---
 
-## 🎯 Problem Statement
+## Key Features
 
-Official Consumer Price Index (CPI) reporting across transport services in India faces four fundamental systemic hurdles:
-
-| # | Challenge | Impact |
-|---|-----------|--------|
-| 1 | **45-Day Statistical Reporting Lag** | MoSPI CPI released weeks after observation. Rapid airline repricing blinds monetary policy during demand surges. |
-| 2 | **Dynamic Pricing Volatility (200%–400%)** | Airfares vary by 300%+ across booking horizons. Unstratified sampling produces artificial inflation spikes. |
-| 3 | **Upward Substitution Bias (2.0%–3.5%)** | Traditional arithmetic averaging (Carli formula) overstates flight inflation by 2.0–3.5%. |
-| 4 | **No Cryptographic Data Provenance** | Manual field surveys lack auditable, tamper-proof proof of fare observation. |
-
-**RAPA** resolves these challenges by deploying an automated, ethical, high-frequency price observation engine paired with a **Jevons Axiomatic Geometric Index** and **DGCA passenger volume weighting**, delivering daily, weekly, and monthly airfare price relatives for national statistical compilation.
-
----
-
-## 🏗️ Core Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    RAPA Executive Portal (UI)                   │
-│         Glassmorphism · Three.js Globe · SSE Streaming          │
-├──────────┬──────────┬───────────────┬──────────────────────────┤
-│  Landing │ Dashboard│  Live Heatmap │  NSO/RBI Data Feed       │
-│  Page    │  KPIs    │  & Elasticity │  Daily/Weekly/Monthly    │
-└────┬─────┴────┬─────┴───────┬───────┴─────────┬────────────────┘
-     │          │             │                 │
-┌────▼──────────▼─────────────▼─────────────────▼────────────────┐
-│              FastAPI REST + SSE Microservice                    │
-│          /v1/fares · /v1/stream · /v1/nso-rbi                  │
-├────────────────────────────────────────────────────────────────┤
-│                    Ingestion Pipeline                           │
-│  ┌──────────┐  ┌──────────────┐  ┌──────────────────────────┐ │
-│  │ MockAir  │  │  Live Flight │  │  Anti-Bot Stealth Engine  │ │
-│  │ Network  │  │  Scraper     │  │  TLS Fingerprint + CAPTCHA│ │
-│  └──────────┘  └──────────────┘  └──────────────────────────┘ │
-├────────────────────────────────────────────────────────────────┤
-│  Pydantic v2 Validation · Jevons Index · DGCA Weighting       │
-├────────────────────────────────────────────────────────────────┤
-│  SQLite (WAL Mode) · SHA-256 Provenance · Audit Vault         │
-└────────────────────────────────────────────────────────────────┘
-```
-
-### Four Pillars
-
-| Pillar | Description |
-|--------|-------------|
-| 🔍 **Ethical Dual-Channel Harvester** | Non-disruptive extraction across direct carriers (IndiGo, Air India, Akasa, SpiceJet, AI Express) and OTAs (MakeMyTrip, Yatra, EaseMyTrip, Cleartrip, Ixigo, Goibibo). 0.2 RPS throttling with humanized jitter. |
-| 🛡️ **Anti-Bot Stealth Engine** | Randomized TLS fingerprints, dynamic User-Agent rotation, Bezier curve mouse simulation, autonomous CAPTCHA solving (Cloudflare Turnstile, reCAPTCHA v2, Vision OCR). Zero third-party dependencies. |
-| 📐 **Axiomatic Index Construction** | Jevons Geometric Mean satisfying UN/ILO Time-Reversal axioms. 5-horizon matched-model stratification (T+1, T+3, T+7, T+14, T+45). DGCA passenger volume weighting. |
-| 🔐 **Cryptographic Audit Vault** | Raw HTML/JSON responses hashed via SHA-256. Immutable, legally defensible provenance for regulatory challenge. |
+| Feature | Description |
+|---|---|
+| National Airfare Index | Composite Jevons geometric price index across all 6 corridors (Base: Dec 2025 = 100.0) |
+| MoSPI CPI Benchmark Integration | Live ingestion from eSankhyiki official API — Item 294 Airfare (Base 2024=100) |
+| Trunk Corridor Monitoring | Real-time fare tracking across 6 major domestic routes with DGCA basket weights |
+| Lead-Time Yield Curves | Fare-vs-advance-booking curves across 5 horizon windows (T+1, T+7, T+15, T+30, T+45) |
+| Sector Heatmap Matrix | 2D pricing density map across corridors and booking horizons with elasticity gradients |
+| Live Flight Microdata Stream | Quote-level data feed from the stealth harvesting engine |
+| Route Network Map | Geographic airport node map with coordinates, distances, and pricing overlays |
+| DGCA Route Weight Adjuster | Applies official DGCA passenger traffic weights to normalize the composite index |
+| Statistical Governance | Outlier detection using Tukey IQR fences and Z-score (|Z| > 2.5) |
+| Multi-Formula Index Lab | Custom index computation — Jevons, Carli, Dutot, Laspeyres, Tornqvist |
+| NSO / RBI Feed | SDMX-aligned machine-readable daily/weekly/monthly index feed |
+| Automated Scheduler Daemon | Background ingestion scheduler with configurable intervals |
+| Multi-Format Export | CSV and JSON export for fare quotes, CPI records, index values, and audit logs |
+| Live Telemetry Logs | Rotating file-based server logs with per-request latency tracking |
 
 ---
 
-## 🖥️ Executive Portal (New UI)
+## Monitored Corridors
 
-The RAPA Executive Portal features a **professional glassmorphism design system** with:
+| Sector | Route | Distance | Annual Passengers | Basket Weight |
+|--------|-------|----------|-------------------|---------------|
+| DEL-BOM | Delhi to Mumbai | 1,148 km | 4,820,000 | 25.0% |
+| DEL-BLR | Delhi to Bengaluru | 1,740 km | 4,120,000 | 22.0% |
+| BOM-BLR | Mumbai to Bengaluru | 842 km | 3,280,000 | 18.0% |
+| DEL-CCU | Delhi to Kolkata | 1,305 km | 2,610,000 | 15.0% |
+| BLR-HYD | Bengaluru to Hyderabad | 502 km | 2,150,000 | 10.0% |
+| MAA-DEL | Chennai to Delhi | 1,760 km | 1,950,000 | 10.0% |
 
-### Landing Page
-- **Hero Section** — High-impact animated metrics (1,600+ quotes, 120+ routes, 99.7% accuracy)
-- **3D Globe Visualization** — Interactive Three.js rotating globe with flight route arcs
-- **Architecture Overview** — Four-pillar system breakdown with animated cards
-- **Smooth Scroll Navigation** — Scroll-spy enabled navigation with active state tracking
-
-### Dashboard
-- **Real-Time KPI Cards** — Live Airfare Index, daily change %, volatility, and MoSPI benchmark delta
-- **Live Flight Data Table** — Paginated, sortable with airline logos and status badges
-- **Sector Heatmap** — Color-coded origin × destination fare matrix
-- **SSE Live Streaming** — Server-Sent Events for real-time price updates
-- **Live Extraction Trigger** — One-click button to initiate scraper pipeline from the UI
-
-### Design System
-- Dark theme with `#0a0e1a` base and cyan/emerald accent palette
-- Frosted glass cards with `backdrop-filter: blur(20px)`
-- Micro-animations on hover and data transitions
-- Fully responsive layout (desktop, tablet, mobile)
+**Booking Horizons**: T+1 (next-day surge) / T+7 (short-notice) / T+15 (mid-horizon) / T+30 (advance baseline) / T+45 (early leisure)
 
 ---
 
-## 📂 Project Structure
+## Tech Stack
+
+**Backend and API**
+- Python 3.10+
+- FastAPI 0.111+ — REST API and portal server
+- Uvicorn — ASGI server
+- Pydantic v2 — Request/response validation
+- SQLite — Local data persistence (fare quotes, CPI benchmarks, index values, audit logs)
+- APScheduler 3.10+ — Background ingestion daemon
+
+**Data Collection**
+- Scrapling + Playwright — Stealth DOM harvesting engine (Phase 1 static + Phase 2 dynamic)
+- google-genai 1.0+ — Gemini Flash parsing pipeline for structured fare extraction from raw HTML
+- python-dotenv — Environment configuration
+
+**Data Processing and Analytics**
+- Pandas 2.0+ — Fare microdata processing, index computation
+- SciPy 1.11+ — Statistical analysis (Pearson r, RMSE, MAPE, IQR outlier detection)
+
+**Dashboard and Visualization**
+- Streamlit 1.35+ — Alternative Streamlit dashboard
+- Plotly 5.22+ — Interactive charts
+- HTML / CSS / JavaScript — Primary web portal (served via FastAPI at `/portal/index.html`)
+
+**Official Data Sources**
+- MoSPI eSankhyiki API — CPI Item 294 Airfare (Base 2024=100), Group 07.3 Transport Proxy (Base 2012=100)
+
+---
+
+## Project Structure
 
 ```
 rapa-engine/
-├── api/                              # FastAPI Microservice
-│   └── main.py                       # REST + SSE server (quotes, heatmap, benchmarks, streaming)
+├── run.py                    # Unified CLI entry point (all commands)
+├── requirements.txt          # Python dependencies
+├── .env.example              # Environment variable template
+├── .env                      # Local secrets (gitignored)
+├── session_state.json        # Dynamic session engine state
 │
-├── benchmark/                        # Official CPI Benchmark Calibration
-│   ├── mospi_client.py               # MoSPI eSankhyiki / Press Release client
-│   └── fixtures/                     # Official CPI datasets (July 2026, Base 2024=100)
+├── api/
+│   ├── main.py               # FastAPI app — all REST endpoints (v2.1.0)
+│   └── stream_routes.py      # Server-Sent Events streaming routes
 │
-├── dashboard/                        # Streamlit Analytics Dashboard
-│   ├── app.py                        # Interactive analytics (heatmaps, elasticity curves)
-│   └── components/                   # Plotly visualization modules
+├── benchmark/
+│   └── mospi_client.py       # MoSPI eSankhyiki CPI ingestion client
 │
-├── data/                             # Persistence & Database Layer
-│   ├── db.py                         # SQLite access layer, schema, migrations & CRUD
-│   ├── rapa.db                       # Production database (WAL mode, 1,600+ quotes)
-│   └── scheduler_state.json          # Scheduler daemon state persistence
+├── fares/
+│   ├── collector.py          # Batch fare collection orchestrator
+│   ├── scraper_client.py     # Stealth scraper fare collector (primary)
+│   ├── live_scraper.py       # Live session scraper
+│   ├── mockair_scraper.py    # MockAir network scraper (sandbox)
+│   ├── amadeus_client.py     # Amadeus API client (secondary)
+│   ├── ignav_client.py       # IgNav client (deprecated, alias)
+│   ├── base.py               # Fare collector base class
+│   └── db_retry.py           # Database retry wrapper
 │
-├── fares/                            # Fare Collection & Scraping Engine
-│   ├── collector.py                  # Route fare collection orchestrator
-│   ├── live_scraper.py               # Live flight scraper with anti-bot stealth engine
-│   ├── scraper_client.py             # Scraper → DB persistence bridge
-│   └── mockair_scraper.py            # MockAir simulated airline network
+├── index/
+│   ├── calculator.py         # Jevons / Carli / Dutot / Laspeyres / Tornqvist index computation
+│   ├── formulas.py           # Index formula implementations
+│   └── heatmap.py            # Sector x horizon heatmap computation
 │
-├── index/                            # Econometric Index Engine
-│   ├── heatmap.py                    # Sector-carrier elasticity matrix
-│   └── jevons.py                     # Jevons Geometric Mean Index calculator
+├── validation/
+│   ├── backtest.py           # 30-day DGCA backtest (Pearson r, RMSE, MAPE)
+│   └── evaluator.py          # CPI benchmark tracking evaluation
 │
-├── pipeline/                         # Orchestration Layer
-│   └── scheduler.py                  # BackgroundSchedulerDaemon (APScheduler)
+├── analytics/
+│   └── enterprise_intelligence.py  # Volatility metrics, fair-price forecast
 │
-├── portal/                           # Executive Web Portal (NEW ✨)
-│   └── index.html                    # Glassmorphism SPA with Three.js globe & SSE streaming
+├── pipeline/
+│   ├── scheduler.py          # Background ingestion daemon
+│   └── governance.py         # Outlier review and imputation lineage
 │
-├── raw_dumps/                        # Cryptographic Provenance Storage
-│   ├── sample_del_bom.html           # Raw airline DOM snapshots
-│   └── quote_DEL-BOM_T+*.html       # Lead-time stratified dumps
+├── data/
+│   ├── db.py                 # SQLite schema, connection helpers, all DB queries
+│   ├── routes.json           # Corridor definitions, airport coordinates, basket weights
+│   └── scheduler_state.json  # Scheduler persistence state
 │
-├── scripts/                          # Verification & Diagnostics
-│   ├── audit_pure.py                 # 24-point system verification
-│   └── verify_live_mockair_scraper.py # Live scraper verification script
+├── src/rapa/ingestion/
+│   ├── custom_scraper.py     # RAPAStealthEngine + ProxyRotator (Phase 1)
+│   └── dynamic_session_engine.py  # Playwright dynamic DOM engine (Phase 2)
 │
-├── src/rapa/ingestion/               # Ingestion & Anti-Bot Engine
-│   ├── custom_scraper.py             # Multi-carrier and OTA scraping engine
-│   ├── dynamic_session_engine.py     # Playwright session manager
-│   └── captcha_solver.py             # Autonomous CAPTCHA solver (Bezier + Vision)
+├── portal/
+│   └── index.html            # Web portal HTML (served at /portal/index.html)
 │
-├── tests/                            # Automated Test Suite (100% Passing)
-│   ├── test_api.py                   # REST API endpoint tests
-│   ├── test_benchmark.py             # MoSPI benchmark tests
-│   ├── test_captcha_solver.py        # Anti-bot resolution tests
-│   ├── test_custom_scraper.py        # Scraper tests
-│   ├── test_deduplication.py         # Sliding-window dedup tests
-│   ├── test_dynamic_session_engine.py # Browser integration tests
-│   ├── test_fare_class.py            # Cabin-class decomposition tests
-│   ├── test_formulas.py              # Jevons math tests
-│   ├── test_frequency_aggregation.py # Aggregation tests
-│   ├── test_heatmap_backtest.py      # Heatmap tests
-│   ├── test_ota_scraper.py           # OTA parsing tests
-│   ├── test_proxy_rotator.py         # Proxy pool tests
-│   └── test_scheduler.py            # Scheduler tests
+├── dashboard/
+│   └── app.py                # Streamlit dashboard (alternative UI)
 │
-├── validation/                       # Econometric & Schema Validation
-│   ├── backtest.py                   # Econometric backtesting engine
-│   └── evaluator.py                  # Pydantic validation and outlier detection
+├── scripts/
+│   ├── audit_pure.py
+│   ├── sync_mockair_to_flight_quotes.py
+│   ├── test_ignav_coverage.py
+│   └── verify_live_mockair_scraper.py
 │
-├── run.py                            # Unified CLI runner
-├── processor.py                      # Gemini extraction pipeline
-├── scheduler.py                      # APScheduler daemon
-├── schema.py                         # Pydantic v2 contracts
-├── db_setup.py                       # Database initializer
-├── requirements.txt                  # Python dependencies
-├── .env.example                      # Environment config template
-└── README.md                         # This file
+├── tests/                    # Full pytest test suite (13 modules)
+│   ├── test_api.py
+│   ├── test_benchmark.py
+│   ├── test_formulas.py
+│   ├── test_heatmap_backtest.py
+│   ├── test_scheduler.py
+│   └── ...
+│
+├── raw_dumps/                # Raw scraped HTML/JSON dumps (auto-generated)
+├── logs/                     # Rotating server logs (auto-generated)
+│
+├── processor.py              # Gemini Flash parsing pipeline (Phase 3)
+├── db_setup.py               # One-time database initialization
+├── schema.py                 # Database schema definitions
+└── scheduler.py              # Top-level scheduler wrapper
 ```
 
 ---
 
-## ⚡ Quick Start
+## Installation
 
 ### Prerequisites
-- **Python 3.11+**
-- **Git**
-- **Gemini API Key** — Get free at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- Python 3.10 or higher
+- Git
 
-### 1. Clone & Install
+### Setup
 
 ```bash
+# Clone the repository
 git clone https://github.com/savanthkumarvedesh-code/rapa-engine.git
 cd rapa-engine
 
-# Create virtual environment (recommended)
-python -m venv .venv
+# Create a virtual environment
+python -m venv venv
 
-# Activate (Windows PowerShell)
-.venv\Scripts\Activate.ps1
+# Activate — Windows
+venv\Scripts\activate
 
-# Activate (Windows cmd)
-.venv\Scripts\activate.bat
+# Activate — macOS / Linux
+source venv/bin/activate
 
-# Install dependencies
+# Install all dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### Environment Configuration
 
 ```bash
-# Copy the example env file
 cp .env.example .env
-
-# Edit .env and add your Gemini API key
-# GEMINI_API_KEY=AIza...your_key
 ```
 
-> ⚠️ **Never commit `.env` to Git.** It is blocked by `.gitignore`.
+Edit `.env` and configure:
 
-### 3. Initialize Database
+```env
+# MoSPI eSankhyiki API (required for CPI benchmark ingestion)
+MOSPI_API_KEY=your_key_here
 
-```bash
-python db_setup.py
+# Google Gemini API (required for Phase 3 HTML parsing pipeline)
+GEMINI_API_KEY=your_key_here
+
+# Optional: Proxy pool for stealth scraper (comma-separated)
+# RAPA_PROXIES=http://ip1:port,http://ip2:port
 ```
 
-### 4. Start the Server
+---
+
+## Running the Application
+
+All commands go through the unified CLI at `run.py`.
+
+### Start the Web Portal and API
 
 ```bash
 python run.py api
 ```
 
-The executive portal opens at **http://localhost:8000/** 🚀
+- Web portal: `http://localhost:8000` or `http://localhost:8000/portal/index.html`
+- Swagger API docs: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
 
-### Available CLI Commands
-
-| Command | Description |
-|---------|-------------|
-| `python run.py api` | Start FastAPI backend on port 8000 |
-| `python run.py ingest` | Fetch official MoSPI CPI benchmark data |
-| `python run.py test` | Run test suite via pytest |
-| `python run.py status` | Print system health & telemetry |
-
----
-
-## 🌐 API Endpoints
-
-### REST Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/` | Executive Portal (glassmorphism SPA) |
-| `GET` | `/health` | System health + DB record count |
-| `GET` | `/v1/fares/quotes` | Filtered, paginated flight quote feed |
-| `GET` | `/v1/fares/sector-heatmap` | Avg/min/max fare per route matrix |
-| `GET` | `/v1/fares/elasticity` | Lead-time price elasticity (4 buckets) |
-| `GET` | `/v1/nso-rbi/feed` | NSO/RBI formatted index feed |
-| `GET` | `/v1/benchmark/mospi` | Official MoSPI CPI benchmarks |
-| `GET` | `/docs` | Swagger UI (auto-generated) |
-| `GET` | `/redoc` | ReDoc API documentation |
-
-### SSE (Server-Sent Events)
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET` | `/v1/stream/live-prices` | Real-time price stream with anti-bot bypass telemetry |
-
-### Example Queries
+### Ingest Official MoSPI CPI Benchmark Data
 
 ```bash
-# All available flights, page 1
-curl http://localhost:8000/v1/fares/quotes?seat_status=available
+python run.py ingest
+```
 
-# DEL→BOM route only, max fare ₹10,000
-curl http://localhost:8000/v1/fares/quotes?origin=DEL&destination=BOM&max_fare=10000
+Fetches CPI Item 294 Airfare records (Base 2024=100) and Group 07.3 Transport Proxy (Base 2012=100) from the official MoSPI eSankhyiki API and stores them in SQLite.
 
-# Heatmap data excluding outliers
-curl http://localhost:8000/v1/fares/sector-heatmap?exclude_outliers=true
+### Collect Live Fare Quotes
 
-# NSO/RBI feed — daily frequency
-curl http://localhost:8000/v1/nso-rbi/feed?frequency=daily
+```bash
+# Phase 1 — Static stealth scraper (raw HTML dumps)
+python run.py scrape
 
-# Live price stream (SSE)
-curl http://localhost:8000/v1/stream/live-prices
+# Phase 2 — Dynamic session engine (Playwright DOM capture)
+python run.py dynamic-scrape
+
+# OTA portal scraper (MMT, Goibibo, Cleartrip, Ixigo, EaseMyTrip, Yatra)
+python run.py scrape-ota
+
+# Phase 3 — Parse raw HTML dumps into structured records via Gemini Flash
+python run.py parse-dumps
+
+# Batch fare collection + index computation in one step
+python run.py fetch-fares
+```
+
+### Run a Full Pipeline Cycle
+
+```bash
+python run.py cycle
+```
+
+Runs: MoSPI ingest, live fare collection, and CPI benchmark tracking evaluation in sequence.
+
+### Background Scheduler Daemon
+
+```bash
+# Start the automated ingestion daemon (interval in seconds)
+python run.py daemon 300
+
+# Or via the top-level scheduler
+python run.py schedule-start
+python run.py schedule-status
+python run.py schedule-trigger
+```
+
+### Streamlit Dashboard (Alternative UI)
+
+```bash
+python run.py dashboard
+# Available at http://localhost:8501
+```
+
+### System Status Check
+
+```bash
+python run.py status
+```
+
+### Run Tests
+
+```bash
+python run.py test
 ```
 
 ---
 
-## 📊 Dashboard Features
+## API Reference
 
-### Executive Portal (http://localhost:8000)
+Full interactive documentation is available at `http://localhost:8000/docs` after starting the server.
 
-| Section | Description |
-|---------|-------------|
-| 🏠 **Hero Landing** | Animated metrics, 3D globe, architecture overview |
-| 📈 **KPI Strip** | Live Airfare Index, Δ%, volatility, MoSPI delta |
-| ✈️ **Flight Table** | Real-time quotes with airline badges and status indicators |
-| 🗺️ **Sector Heatmap** | Color-coded fare matrix across all monitored corridors |
-| 📡 **Live Extraction** | One-click trigger for scraper pipeline with progress streaming |
+### Endpoint Groups
 
-### Streamlit Analytics (http://localhost:8501)
-
-| Section | Visualization |
-|---------|---------------|
-| KPI Cards | Total quotes, Avg/Min/Max fare, Math valid % |
-| Sector Heatmap | Plotly `imshow` — origin × destination × avg fare |
-| Airline Breakdown | Stacked bar — fare components per airline |
-| Seat Status | Donut pie chart |
-| Elasticity Curve | Line chart with shaded min/max band across 4 lead-time buckets |
-| Raw Data Explorer | Filterable table + CSV download |
+| Group | Base Path | Description |
+|-------|-----------|-------------|
+| System | `/v1/health` | Health check and database telemetry |
+| CPI Benchmark | `/v1/benchmark/*` | MoSPI eSankhyiki Item 294 Airfare records |
+| Real-Time Fares | `/v1/fares/*` | Route-level fare microdata and collector status |
+| Computed Index | `/v1/index/*` | Jevons / multi-formula price index series |
+| Benchmark Validation | `/v1/validation/*` | CPI calibration and DGCA 30-day backtest |
+| Sector Heatmaps | `/v1/heatmap/*` | 2D sector x horizon fare heatmaps |
+| NSO / RBI Feed | `/v1/nso-rbi/*` | SDMX-aligned machine-readable index feed |
+| Analytics | `/v1/analytics/*` | Volatility metrics and fair-price forecast |
+| Statistical Governance | `/v1/governance/*` | Outlier review, health matrix, audit lineage |
+| Geographic Routes | `/v1/routes/*` | Airport coordinates and corridor proximity matrix |
+| Export Engine | `/v1/export/*` | CSV and JSON export for all datasets |
+| Scheduler | `/v1/scheduler/*` | Background daemon control (start, stop, trigger) |
 
 ---
 
-## 🛡️ Live Scraper Engine
+## Index Methodology
 
-The RAPA Stealth Engine (`fares/live_scraper.py`) provides resilient, real-time airfare harvesting:
+### National Airfare Index (NAI)
+
+The headline index is computed as a **Matched-Item Jevons Geometric Mean** across all monitored corridors:
 
 ```
-┌──────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  TLS Finger  │────▶│  Anti-Bot Bypass  │────▶│  DOM Parsing &  │
-│  Randomizer  │     │  (Captcha Solve)  │     │  Fare Extract   │
-└──────────────┘     └──────────────────┘     └────────┬────────┘
-                                                        │
-                     ┌──────────────────┐               │
-                     │  Calibrated Fare │◀──────────────┘
-                     │  Fallback System │   (if scrape fails)
-                     └──────────────────┘
+NAI = EXP( SUM( w_i * LN(P_i / P0_i) ) ) * 100
 ```
 
-### Features
-- **Randomized TLS Fingerprints** — Evades browser fingerprinting detection
-- **Dynamic User-Agent Rotation** — Pool of 50+ realistic browser signatures
-- **IP Rotation & Rate Limiting** — Configurable proxy pool with health validation
-- **Autonomous CAPTCHA Solving** — Cloudflare Turnstile, reCAPTCHA v2, Vision OCR
-- **Calibrated Tariff Fallback** — Pre-validated fare dictionary ensures zero data gaps
-- **Jitter Delays** — Humanized inter-request timing to avoid throttling
+Where:
+- `P_i` = current average fare for corridor i
+- `P0_i` = baseline average fare for corridor i (December 2025)
+- `w_i` = DGCA basket weight for corridor i (sums to 1.0)
 
-### Monitored Corridors
+The Jevons formula eliminates substitution bias — a statistically significant distortion of approximately 2.13 index points compared to arithmetic averaging methods.
 
-| Route | Volume Weight | Route | Volume Weight |
-|-------|:------------:|-------|:------------:|
-| DEL ↔ BOM | 25% | DEL ↔ BLR | 20% |
-| DEL ↔ CCU | 15% | BOM ↔ BLR | 12% |
-| BLR ↔ HYD | 10% | DEL ↔ MAA | 8% |
-| BOM ↔ CCU | 5% | MAA ↔ HYD | 5% |
+### Validation Against MoSPI CPI
 
----
+Calibration against MoSPI Official CPI Item 294 (Airfare, Base 2024=100) uses:
+- Pearson correlation coefficient (r) over a 30-day rolling window
+- Root Mean Squared Error (RMSE) in index points
+- Mean Absolute Percentage Error (MAPE)
 
-## 📐 Database Schema
-
-```sql
-CREATE TABLE flight_quotes (
-    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
-    flight_number        TEXT    NOT NULL,
-    airline              TEXT    NOT NULL,
-    origin_sector        TEXT    NOT NULL,
-    destination_sector   TEXT    NOT NULL,
-    departure_timestamp  TEXT    NOT NULL,
-    base_fare            REAL    NOT NULL,
-    taxes                REAL    NOT NULL,
-    user_development_fee REAL    NOT NULL,
-    convenience_charge   REAL    NOT NULL,
-    total_fare           REAL    NOT NULL,
-    seat_status          TEXT    NOT NULL
-        CHECK (seat_status IN ('available', 'sold-out', 'cancelled')),
-    is_math_valid        INTEGER NOT NULL DEFAULT 1,
-    is_price_outlier     INTEGER NOT NULL DEFAULT 0,
-    is_duplicate         INTEGER NOT NULL DEFAULT 0,
-    source_type          TEXT DEFAULT 'aggregator',
-    ota_platform         TEXT,
-    fare_class           TEXT DEFAULT 'UNKNOWN',
-    source_file          TEXT,
-    ingestion_timestamp  DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-```
-
----
-
-## 🏛️ SIH Problem Statement Compliance
-
-| Requirement | Implementation | Status |
-|------------|----------------|:------:|
-| Multi-Source Web Scraping | Direct carriers + 6 OTA portals with ethical throttling | ✅ |
-| Anti-Bot Challenge Resolution | Autonomous CAPTCHA solver (Bezier + Vision OCR) | ✅ |
-| IP Rotation & Proxy Management | Round-robin `ProxyRotator` with health validation | ✅ |
-| High-Frequency Index Construction | Jevons Geometric Mean with daily/weekly/monthly aggregation | ✅ |
-| Scheduled Daily Extraction | APScheduler daemon at 03:00 IST (configurable) | ✅ |
-| Fare-Class Disaggregation | Base fare, taxes, UDF, convenience charge, cabin class | ✅ |
-| Sliding-Window Deduplication | 5-minute window with non-destructive `is_duplicate` flagging | ✅ |
-| Cryptographic Provenance | SHA-256 hashed raw HTML/JSON archives | ✅ |
-| MoSPI Benchmark Tracking | July 2026 CPI (Base 2024=100), Group 07.3 proxy | ✅ |
-| Executive Portal UI | Professional glassmorphism SPA with real-time streaming | ✅ |
-
----
-
-## 🔐 Security
-
-| Item | Status |
-|------|--------|
-| API key in source code | ❌ Never |
-| `.env` in Git | 🚫 Blocked by `.gitignore` |
-| `.env.example` (safe template) | ✅ In repo |
-| Database files (`*.db`) | 🚫 Excluded from Git |
-| Raw dumps (`raw_dumps/`) | 🔒 SHA-256 hashed |
-
----
-
-## 🧰 Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Backend** | Python 3.11+, FastAPI, Uvicorn, Pydantic v2 |
-| **Database** | SQLite (WAL mode), Pandas |
-| **Frontend** | HTML5, CSS3 (Glassmorphism), Vanilla JavaScript |
-| **3D Visualization** | Three.js (WebGL globe with flight arcs) |
-| **Real-Time** | Server-Sent Events (SSE) |
-| **Analytics** | Streamlit, Plotly, SciPy |
-| **Scheduling** | APScheduler |
-| **AI/ML** | Google Gemini (structured output extraction) |
-| **Scraping** | Requests + Stealth TLS, Playwright (fallback) |
-
----
-
-## 📦 Dependencies
+### Dynamic Surge Premium
 
 ```
-google-genai>=1.0.0        # Gemini API — structured output extraction
-pandas>=2.0.0              # Data validation, Z-score, aggregation
-pydantic>=2.0.0            # JSON schema enforcement
-scipy>=1.11.0              # stats.zscore for outlier detection
-python-dotenv>=1.0.0       # Load GEMINI_API_KEY from .env
-fastapi>=0.111.0           # REST API framework
-uvicorn[standard]>=0.29.0  # ASGI server
-streamlit>=1.35.0          # Interactive analytics dashboard
-plotly>=5.22.0             # Interactive charts
-apscheduler>=3.10.0        # Background task scheduling
+Surge Premium % = ((T+1 Avg Fare - T+45 Avg Fare) / T+45 Avg Fare) * 100
 ```
 
----
-
-## 👨‍💻 Author
-
-**Savanth Kumar Vedesh** — [GitHub](https://github.com/savanthkumarvedesh-code)
-
-Built for **Smart India Hackathon (SIH)** — Real-Time Airfare Price Index & High-Frequency CPI Augmentation
+Measures the price premium paid by passengers booking 1 day ahead versus 45 days ahead on the same corridor.
 
 ---
 
-<div align="center">
+## SIH Context
 
-**⭐ Star this repo if you find it useful!**
+| Field | Value |
+|-------|-------|
+| Hackathon | Smart India Hackathon (SIH) |
+| Problem Domain | Ministry of Statistics and Programme Implementation (MoSPI) |
+| Objective | Augment India CPI transport basket with high-frequency real-time airfare data |
+| Target Beneficiary | NSO / RBI macro-modeling pipelines |
+| Data Dissemination Standard | SDMX-aligned JSON micro-index feed |
 
-*RAPA Engine — Transforming India's airfare price intelligence*
+---
 
-</div>
-]]>
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'feat: add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
+
+---
+
+## License
+
+This project is submitted as part of Smart India Hackathon and is intended for academic and research use.
+
+---
+
+## Repository
+
+[github.com/savanthkumarvedesh-code/rapa-engine](https://github.com/savanthkumarvedesh-code/rapa-engine)
